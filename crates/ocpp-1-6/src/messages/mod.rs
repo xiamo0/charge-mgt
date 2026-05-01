@@ -8,6 +8,3 @@ pub mod envelope;
 
 pub mod calls;
 pub mod confs;
-
-pub use config::{OcppConfig, SharedConfig};
-pub use envelope::{Call, CallError, CallResult};
