@@ -1,8 +1,8 @@
 //! StopTransaction 消息及处理器
 
-use serde::{Deserialize, Serialize};
 use super::super::confs::stop_transaction_conf::StopTransactionConfirmation;
 use crate::common::transaction::Reason;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct StopTransactionRequest {

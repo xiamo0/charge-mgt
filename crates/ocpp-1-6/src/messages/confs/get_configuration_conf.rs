@@ -1,7 +1,7 @@
 //! GetConfiguration 响应
 
-use serde::{Deserialize, Serialize};
 use crate::common::configuration::ConfigurationKey;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GetConfigurationConfirmation {

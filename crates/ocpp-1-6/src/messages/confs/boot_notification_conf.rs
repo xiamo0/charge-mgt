@@ -1,7 +1,7 @@
 //! BootNotification 响应
 
-use serde::{Deserialize, Serialize};
 use crate::common::status::RegistrationStatus;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BootNotificationConfirmation {
@@ -49,7 +49,8 @@ mod tests {
             current_time: "2024-01-01T00:00:00Z".to_string(),
             interval: 120,
         };
-        let de: BootNotificationConfirmation = serde_json::from_str(&serde_json::to_string(&conf).unwrap()).unwrap();
+        let de: BootNotificationConfirmation =
+            serde_json::from_str(&serde_json::to_string(&conf).unwrap()).unwrap();
         assert_eq!(de.status, RegistrationStatus::Pending);
     }
 }

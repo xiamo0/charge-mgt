@@ -1,7 +1,7 @@
 //! BootNotification 消息及处理器
 
-use serde::{Deserialize, Serialize};
 use super::super::confs::boot_notification_conf::BootNotificationConfirmation;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BootNotificationRequest {
@@ -86,7 +86,10 @@ mod tests {
     #[test]
     fn test_boot_notification_config_default() {
         let config = BootNotificationConfig::default();
-        assert_eq!(config.status, crate::common::status::RegistrationStatus::Accepted);
+        assert_eq!(
+            config.status,
+            crate::common::status::RegistrationStatus::Accepted
+        );
         assert_eq!(config.interval_secs, 30);
     }
 
@@ -106,14 +109,18 @@ mod tests {
             meter_serial_number: None,
         };
         let conf = handler.handle(req);
-        assert_eq!(conf.status, crate::common::status::RegistrationStatus::Accepted);
+        assert_eq!(
+            conf.status,
+            crate::common::status::RegistrationStatus::Accepted
+        );
         assert_eq!(conf.interval, 30);
     }
 
     #[test]
     fn test_default_boot_notification_handler_thread_safe() {
         let config = BootNotificationConfig::default();
-        let handler: Arc<dyn BootNotificationHandler> = Arc::new(DefaultBootNotificationHandler::new(config));
+        let handler: Arc<dyn BootNotificationHandler> =
+            Arc::new(DefaultBootNotificationHandler::new(config));
         let req = BootNotificationRequest {
             charge_point_vendor: "VendorX".to_string(),
             charge_point_model: "ModelY".to_string(),
@@ -126,6 +133,9 @@ mod tests {
             meter_serial_number: None,
         };
         let conf = handler.handle(req);
-        assert_eq!(conf.status, crate::common::status::RegistrationStatus::Accepted);
+        assert_eq!(
+            conf.status,
+            crate::common::status::RegistrationStatus::Accepted
+        );
     }
 }

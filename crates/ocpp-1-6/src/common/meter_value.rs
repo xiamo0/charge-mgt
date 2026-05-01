@@ -257,15 +257,13 @@ mod tests {
     fn test_meter_value_roundtrip() {
         let mv = MeterValue {
             timestamp: "2024-06-15T10:30:00Z".to_string(),
-            sampled_value: vec![
-                SampledValue {
-                    value: "50.0".to_string(),
-                    context: Some(ReadingContext::TransactionBegin),
-                    format: Some(ValueFormat::Raw),
-                    measurand: Some(Measurand::EnergyActiveImportRegister),
-                    unit: Some(UnitOfMeasure::Wh),
-                },
-            ],
+            sampled_value: vec![SampledValue {
+                value: "50.0".to_string(),
+                context: Some(ReadingContext::TransactionBegin),
+                format: Some(ValueFormat::Raw),
+                measurand: Some(Measurand::EnergyActiveImportRegister),
+                unit: Some(UnitOfMeasure::Wh),
+            }],
         };
         let json = serde_json::to_string(&mv).unwrap();
         let de: MeterValue = serde_json::from_str(&json).unwrap();

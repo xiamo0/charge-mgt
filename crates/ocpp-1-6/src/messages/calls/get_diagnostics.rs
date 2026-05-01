@@ -1,7 +1,7 @@
 //! GetDiagnostics 消息及处理器
 
-use serde::{Deserialize, Serialize};
 use super::super::confs::get_diagnostics_conf::GetDiagnosticsConfirmation;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GetDiagnosticsRequest {

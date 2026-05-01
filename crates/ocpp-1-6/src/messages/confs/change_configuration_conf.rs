@@ -1,7 +1,7 @@
 //! ChangeConfiguration 响应
 
-use serde::{Deserialize, Serialize};
 use crate::common::status::ConfigurationStatus;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ChangeConfigurationConfirmation {

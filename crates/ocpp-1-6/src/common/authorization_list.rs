@@ -25,7 +25,10 @@ mod tests {
     // AuthorizationVersion 测试
     #[test]
     fn test_authorization_version_all_variants() {
-        let variants = [AuthorizationVersion::Full, AuthorizationVersion::Differential];
+        let variants = [
+            AuthorizationVersion::Full,
+            AuthorizationVersion::Differential,
+        ];
         for v in variants {
             let json = serde_json::to_string(&v).unwrap();
             let de: AuthorizationVersion = serde_json::from_str(&json).unwrap();
@@ -35,8 +38,14 @@ mod tests {
 
     #[test]
     fn test_authorization_version_serialization() {
-        assert_eq!(serde_json::to_string(&AuthorizationVersion::Full).unwrap(), "\"Full\"");
-        assert_eq!(serde_json::to_string(&AuthorizationVersion::Differential).unwrap(), "\"Differential\"");
+        assert_eq!(
+            serde_json::to_string(&AuthorizationVersion::Full).unwrap(),
+            "\"Full\""
+        );
+        assert_eq!(
+            serde_json::to_string(&AuthorizationVersion::Differential).unwrap(),
+            "\"Differential\""
+        );
     }
 
     // AuthorizationList 测试

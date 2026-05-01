@@ -1,7 +1,7 @@
 //! GetCompositeSchedule 响应
 
-use serde::{Deserialize, Serialize};
 use crate::common::configuration::ChargingSchedule;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GetCompositeScheduleConfirmation {

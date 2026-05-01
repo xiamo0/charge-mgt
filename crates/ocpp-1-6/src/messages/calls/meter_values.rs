@@ -1,8 +1,8 @@
 //! MeterValues 消息及处理器
 
-use serde::{Deserialize, Serialize};
 use super::super::confs::meter_values_conf::MeterValuesConfirmation;
 use crate::common::meter_value::MeterValue;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MeterValuesRequest {

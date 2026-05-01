@@ -1,7 +1,7 @@
 //! SetChargingProfile 响应
 
-use serde::{Deserialize, Serialize};
 use crate::common::status::ChargingProfileStatus;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SetChargingProfileConfirmation {

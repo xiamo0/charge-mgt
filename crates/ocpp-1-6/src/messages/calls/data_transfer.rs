@@ -1,9 +1,9 @@
 //! DataTransfer 消息及处理器
 
-use serde::{Deserialize, Serialize};
-use serde_json::Value as JsonValue;
 use super::super::confs::data_transfer_conf::DataTransferConfirmation;
 use crate::common::status::DataTransferStatus;
+use serde::{Deserialize, Serialize};
+use serde_json::Value as JsonValue;
 
 #[derive(Debug, thiserror::Error)]
 pub enum DataTransferError {
@@ -24,7 +24,11 @@ pub struct DataTransferRequest {
 
 pub trait DataTransferHandler: Send + Sync {
     fn vendor_id(&self) -> &'static str;
-    fn handle(&self, message_id: Option<&str>, data: &Option<JsonValue>) -> Result<JsonValue, DataTransferError>;
+    fn handle(
+        &self,
+        message_id: Option<&str>,
+        data: &Option<JsonValue>,
+    ) -> Result<JsonValue, DataTransferError>;
 }
 
 pub struct DefaultDataTransferHandler;
@@ -46,7 +50,11 @@ impl DataTransferHandler for DefaultDataTransferHandler {
         "default"
     }
 
-    fn handle(&self, _message_id: Option<&str>, _data: &Option<JsonValue>) -> Result<JsonValue, DataTransferError> {
+    fn handle(
+        &self,
+        _message_id: Option<&str>,
+        _data: &Option<JsonValue>,
+    ) -> Result<JsonValue, DataTransferError> {
         Err(DataTransferError::UnknownVendor)
     }
 }

@@ -1,7 +1,7 @@
 //! 交易相关类型
 
-use serde::{Deserialize, Serialize};
 use super::meter_value::MeterValue;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TransactionData {
@@ -54,16 +54,31 @@ mod tests {
 
     #[test]
     fn test_reason_serialization() {
-        assert_eq!(serde_json::to_string(&Reason::EvDisconnected).unwrap(), "\"EvDisconnected\"");
-        assert_eq!(serde_json::to_string(&Reason::PowerLoss).unwrap(), "\"PowerLoss\"");
+        assert_eq!(
+            serde_json::to_string(&Reason::EvDisconnected).unwrap(),
+            "\"EvDisconnected\""
+        );
+        assert_eq!(
+            serde_json::to_string(&Reason::PowerLoss).unwrap(),
+            "\"PowerLoss\""
+        );
         assert_eq!(serde_json::to_string(&Reason::Local).unwrap(), "\"Local\"");
     }
 
     #[test]
     fn test_reason_deserialization() {
-        assert_eq!(serde_json::from_str::<Reason>("\"EmergencyStop\"").unwrap(), Reason::EmergencyStop);
-        assert_eq!(serde_json::from_str::<Reason>("\"Remote\"").unwrap(), Reason::Remote);
-        assert_eq!(serde_json::from_str::<Reason>("\"SoftReset\"").unwrap(), Reason::SoftReset);
+        assert_eq!(
+            serde_json::from_str::<Reason>("\"EmergencyStop\"").unwrap(),
+            Reason::EmergencyStop
+        );
+        assert_eq!(
+            serde_json::from_str::<Reason>("\"Remote\"").unwrap(),
+            Reason::Remote
+        );
+        assert_eq!(
+            serde_json::from_str::<Reason>("\"SoftReset\"").unwrap(),
+            Reason::SoftReset
+        );
     }
 
     // TransactionData 测试
@@ -81,12 +96,10 @@ mod tests {
     #[test]
     fn test_transaction_data_with_meter_values() {
         let td = TransactionData {
-            transaction_data: vec![
-                MeterValue {
-                    timestamp: "2024-01-01T00:00:00Z".to_string(),
-                    sampled_value: vec![],
-                },
-            ],
+            transaction_data: vec![MeterValue {
+                timestamp: "2024-01-01T00:00:00Z".to_string(),
+                sampled_value: vec![],
+            }],
         };
         let json = serde_json::to_string(&td).unwrap();
         let de: TransactionData = serde_json::from_str(&json).unwrap();
@@ -96,20 +109,16 @@ mod tests {
     #[test]
     fn test_transaction_data_roundtrip() {
         let td = TransactionData {
-            transaction_data: vec![
-                MeterValue {
-                    timestamp: "2024-01-01T12:00:00Z".to_string(),
-                    sampled_value: vec![
-                        super::super::meter_value::SampledValue {
-                            value: "100.0".to_string(),
-                            context: Some(super::super::meter_value::ReadingContext::TransactionBegin),
-                            format: None,
-                            measurand: None,
-                            unit: None,
-                        },
-                    ],
-                },
-            ],
+            transaction_data: vec![MeterValue {
+                timestamp: "2024-01-01T12:00:00Z".to_string(),
+                sampled_value: vec![super::super::meter_value::SampledValue {
+                    value: "100.0".to_string(),
+                    context: Some(super::super::meter_value::ReadingContext::TransactionBegin),
+                    format: None,
+                    measurand: None,
+                    unit: None,
+                }],
+            }],
         };
         let json = serde_json::to_string(&td).unwrap();
         let de: TransactionData = serde_json::from_str(&json).unwrap();

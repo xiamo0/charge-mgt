@@ -1,9 +1,9 @@
 //! SendLocalList 消息及处理器
 
-use serde::{Deserialize, Serialize};
 use super::super::confs::send_local_list_conf::SendLocalListConfirmation;
 use crate::common::authorization_list::AuthorizationList;
 use crate::common::status::UpdateType;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SendLocalListRequest {

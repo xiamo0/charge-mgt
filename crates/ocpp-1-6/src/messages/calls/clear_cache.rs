@@ -1,7 +1,7 @@
 //! ClearCache 消息及处理器
 
-use serde::{Deserialize, Serialize};
 use super::super::confs::clear_cache_conf::ClearCacheConfirmation;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct ClearCacheRequest;

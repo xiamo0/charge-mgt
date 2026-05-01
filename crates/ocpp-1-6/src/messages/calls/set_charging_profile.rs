@@ -1,8 +1,8 @@
 //! SetChargingProfile 消息及处理器
 
-use serde::{Deserialize, Serialize};
 use super::super::confs::set_charging_profile_conf::SetChargingProfileConfirmation;
 use crate::common::configuration::ChargingProfile;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SetChargingProfileRequest {

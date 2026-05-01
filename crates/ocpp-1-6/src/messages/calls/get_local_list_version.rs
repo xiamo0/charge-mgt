@@ -1,7 +1,7 @@
 //! GetLocalListVersion 消息及处理器
 
-use serde::{Deserialize, Serialize};
 use super::super::confs::get_local_list_version_conf::GetLocalListVersionConfirmation;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct GetLocalListVersionRequest;

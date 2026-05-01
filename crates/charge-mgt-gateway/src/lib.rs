@@ -1,11 +1,11 @@
 //! Charge-mgt Gateway
 
-pub mod north;
-pub mod south;
-pub mod proxy;
-pub mod protocol;
-pub mod codec;
-pub mod routes;
 pub mod app;
-pub mod state;
+pub mod codec;
 pub mod config;
+pub mod north;
+pub mod protocol;
+pub mod proxy;
+pub mod routes;
+pub mod south;
+pub mod state;

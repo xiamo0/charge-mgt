@@ -1,7 +1,7 @@
 //! ClearCache 响应
 
-use serde::{Deserialize, Serialize};
 use crate::common::status::ClearCacheStatus;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ClearCacheConfirmation {

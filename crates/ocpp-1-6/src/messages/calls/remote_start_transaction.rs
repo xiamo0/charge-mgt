@@ -1,8 +1,8 @@
 //! RemoteStartTransaction 消息及处理器
 
-use serde::{Deserialize, Serialize};
 use super::super::confs::remote_start_transaction_conf::RemoteStartTransactionConfirmation;
 use crate::common::configuration::ChargingProfile;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RemoteStartTransactionRequest {

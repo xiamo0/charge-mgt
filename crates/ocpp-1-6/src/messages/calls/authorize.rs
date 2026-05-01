@@ -1,7 +1,7 @@
 //! Authorize 消息及处理器
 
-use serde::{Deserialize, Serialize};
 use super::super::confs::authorize_conf::AuthorizeConfirmation;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AuthorizeRequest {
@@ -51,31 +51,48 @@ mod tests {
     #[test]
     fn test_default_authorize_handler_new() {
         let handler = DefaultAuthorizeHandler::new();
-        let req = AuthorizeRequest { id_tag: "TAG001".to_string() };
+        let req = AuthorizeRequest {
+            id_tag: "TAG001".to_string(),
+        };
         let conf = handler.handle(req);
-        assert_eq!(conf.status, crate::common::id_tag::AuthorizationStatus::Accepted);
+        assert_eq!(
+            conf.status,
+            crate::common::id_tag::AuthorizationStatus::Accepted
+        );
     }
 
     #[test]
     fn test_default_authorize_handler_default() {
         let handler = DefaultAuthorizeHandler;
-        let req = AuthorizeRequest { id_tag: "TAG001".to_string() };
+        let req = AuthorizeRequest {
+            id_tag: "TAG001".to_string(),
+        };
         let conf = handler.handle(req);
-        assert_eq!(conf.status, crate::common::id_tag::AuthorizationStatus::Accepted);
+        assert_eq!(
+            conf.status,
+            crate::common::id_tag::AuthorizationStatus::Accepted
+        );
     }
 
     #[test]
     fn test_default_authorize_handler_thread_safe() {
         let handler: Arc<dyn AuthorizeHandler> = Arc::new(DefaultAuthorizeHandler::new());
-        let req = AuthorizeRequest { id_tag: "TAG001".to_string() };
+        let req = AuthorizeRequest {
+            id_tag: "TAG001".to_string(),
+        };
         let conf = handler.handle(req.clone());
-        assert_eq!(conf.status, crate::common::id_tag::AuthorizationStatus::Accepted);
+        assert_eq!(
+            conf.status,
+            crate::common::id_tag::AuthorizationStatus::Accepted
+        );
     }
 
     #[test]
     fn test_default_authorize_handler_returns_correct_type() {
         let handler = DefaultAuthorizeHandler::new();
-        let req = AuthorizeRequest { id_tag: "TAG001".to_string() };
+        let req = AuthorizeRequest {
+            id_tag: "TAG001".to_string(),
+        };
         let conf = handler.handle(req);
         assert!(conf.id_tag_info.is_none());
     }

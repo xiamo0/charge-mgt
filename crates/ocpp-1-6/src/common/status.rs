@@ -323,16 +323,34 @@ mod tests {
     // RegistrationStatus 测试
     #[test]
     fn test_registration_status_serialization() {
-        assert_eq!(serde_json::to_string(&RegistrationStatus::Accepted).unwrap(), "\"Accepted\"");
-        assert_eq!(serde_json::to_string(&RegistrationStatus::Pending).unwrap(), "\"Pending\"");
-        assert_eq!(serde_json::to_string(&RegistrationStatus::Rejected).unwrap(), "\"Rejected\"");
+        assert_eq!(
+            serde_json::to_string(&RegistrationStatus::Accepted).unwrap(),
+            "\"Accepted\""
+        );
+        assert_eq!(
+            serde_json::to_string(&RegistrationStatus::Pending).unwrap(),
+            "\"Pending\""
+        );
+        assert_eq!(
+            serde_json::to_string(&RegistrationStatus::Rejected).unwrap(),
+            "\"Rejected\""
+        );
     }
 
     #[test]
     fn test_registration_status_deserialization() {
-        assert_eq!(serde_json::from_str::<RegistrationStatus>(r#""Accepted""#).unwrap(), RegistrationStatus::Accepted);
-        assert_eq!(serde_json::from_str::<RegistrationStatus>(r#""Pending""#).unwrap(), RegistrationStatus::Pending);
-        assert_eq!(serde_json::from_str::<RegistrationStatus>(r#""Rejected""#).unwrap(), RegistrationStatus::Rejected);
+        assert_eq!(
+            serde_json::from_str::<RegistrationStatus>(r#""Accepted""#).unwrap(),
+            RegistrationStatus::Accepted
+        );
+        assert_eq!(
+            serde_json::from_str::<RegistrationStatus>(r#""Pending""#).unwrap(),
+            RegistrationStatus::Pending
+        );
+        assert_eq!(
+            serde_json::from_str::<RegistrationStatus>(r#""Rejected""#).unwrap(),
+            RegistrationStatus::Rejected
+        );
     }
 
     // RemoteStartStopStatus 测试
@@ -430,8 +448,14 @@ mod tests {
     // ChargingRateUnit 测试
     #[test]
     fn test_charging_rate_unit() {
-        assert_eq!(serde_json::to_string(&ChargingRateUnit::W).unwrap(), "\"W\"");
-        assert_eq!(serde_json::to_string(&ChargingRateUnit::A).unwrap(), "\"A\"");
+        assert_eq!(
+            serde_json::to_string(&ChargingRateUnit::W).unwrap(),
+            "\"W\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ChargingRateUnit::A).unwrap(),
+            "\"A\""
+        );
     }
 
     // ChargingProfilePurpose 测试

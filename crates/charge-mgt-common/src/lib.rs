@@ -1,9 +1,9 @@
 //! Common utilities for charge-mgt
 
 mod config;
+mod db;
 mod error;
 mod id;
-mod tracing;
-mod db;
 mod mq;
+mod tracing;
 mod utils;

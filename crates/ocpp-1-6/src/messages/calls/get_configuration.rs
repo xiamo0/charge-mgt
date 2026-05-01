@@ -1,7 +1,7 @@
 //! GetConfiguration 消息及处理器
 
-use serde::{Deserialize, Serialize};
 use super::super::confs::get_configuration_conf::GetConfigurationConfirmation;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GetConfigurationRequest {

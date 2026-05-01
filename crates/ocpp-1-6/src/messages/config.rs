@@ -32,8 +32,7 @@ impl OcppConfig {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Deserialize, Serialize, Default)]
 pub struct HandlerConfig {
     pub vendor_id: String,
     pub message_id: Option<String>,

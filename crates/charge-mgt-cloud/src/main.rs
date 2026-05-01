@@ -1,11 +1,6 @@
-use std::net::SocketAddr;
-use axum::{
-    Router,
-    routing::get,
-    response::Json,
-    Server,
-};
+use axum::{response::Json, routing::get, Router, Server};
 use serde_json::json;
+use std::net::SocketAddr;
 
 async fn health() -> Json<serde_json::Value> {
     Json(json!({

@@ -9,6 +9,8 @@ pub struct GetLocalListVersionConfirmation {
 
 impl GetLocalListVersionConfirmation {
     pub fn new(version: i32) -> Self {
-        Self { list_version: version }
+        Self {
+            list_version: version,
+        }
     }
 }

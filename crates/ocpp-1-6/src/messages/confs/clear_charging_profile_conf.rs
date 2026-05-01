@@ -1,7 +1,7 @@
 //! ClearChargingProfile 响应
 
-use serde::{Deserialize, Serialize};
 use crate::common::status::ClearChargingProfileStatus;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ClearChargingProfileConfirmation {

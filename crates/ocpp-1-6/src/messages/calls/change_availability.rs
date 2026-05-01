@@ -1,8 +1,8 @@
 //! ChangeAvailability 消息及处理器
 
-use serde::{Deserialize, Serialize};
 use super::super::confs::change_availability_conf::ChangeAvailabilityConfirmation;
 use crate::common::status::AvailabilityType;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ChangeAvailabilityRequest {

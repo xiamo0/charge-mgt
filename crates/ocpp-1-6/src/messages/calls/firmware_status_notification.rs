@@ -1,7 +1,7 @@
 //! FirmwareStatusNotification 消息及处理器（单向消息，无需回复）
 
-use serde::{Deserialize, Serialize};
 use crate::common::status::FirmwareStatus;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FirmwareStatusNotificationRequest {
@@ -29,6 +29,5 @@ impl DefaultFirmwareStatusNotificationHandler {
 }
 
 impl FirmwareStatusNotificationHandler for DefaultFirmwareStatusNotificationHandler {
-    fn handle(&self, _req: FirmwareStatusNotificationRequest) {
-    }
+    fn handle(&self, _req: FirmwareStatusNotificationRequest) {}
 }

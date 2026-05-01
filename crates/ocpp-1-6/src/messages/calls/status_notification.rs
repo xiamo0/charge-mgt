@@ -1,8 +1,8 @@
 //! StatusNotification 消息及处理器
 
-use serde::{Deserialize, Serialize};
 use super::super::confs::status_notification_conf::StatusNotificationConfirmation;
-use crate::common::status::{ChargePointStatus, ChargePointErrorCode};
+use crate::common::status::{ChargePointErrorCode, ChargePointStatus};
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct StatusNotificationRequest {

@@ -1,7 +1,7 @@
 //! StartTransaction 响应
 
-use serde::{Deserialize, Serialize};
 use crate::common::id_tag::IdTagInfo;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct StartTransactionConfirmation {

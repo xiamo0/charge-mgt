@@ -1,7 +1,7 @@
 //! Heartbeat 消息及处理器
 
-use serde::{Deserialize, Serialize};
 use super::super::confs::heartbeat_conf::HeartbeatConfirmation;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
 pub struct HeartbeatRequest;

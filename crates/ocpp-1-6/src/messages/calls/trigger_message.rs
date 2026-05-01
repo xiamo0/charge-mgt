@@ -1,8 +1,8 @@
 //! TriggerMessage 消息及处理器
 
-use serde::{Deserialize, Serialize};
 use super::super::confs::trigger_message_conf::TriggerMessageConfirmation;
 use crate::common::status::MessageTrigger;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TriggerMessageRequest {

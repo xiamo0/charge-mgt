@@ -1,7 +1,7 @@
 //! GetCompositeSchedule 消息及处理器
 
-use serde::{Deserialize, Serialize};
 use super::super::confs::get_composite_schedule_conf::GetCompositeScheduleConfirmation;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GetCompositeScheduleRequest {

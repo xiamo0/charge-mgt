@@ -3,7 +3,7 @@
 mod common;
 mod messages;
 mod profiles;
-mod serialization;
 mod protocol;
+mod serialization;
 
 pub use protocol::*;
