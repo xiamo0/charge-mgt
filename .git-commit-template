@@ -1,0 +1,8 @@
+# 类型: feat | fix | docs | style | refactor | test | chore
+# 范围: ocpp-1-6 | ocpp-2-0-1 | ocpp-2-1 | cloud | gateway | simulator | common
+# 描述: 简短描述（不超过50字），并且用中文描述
+
+# 格式: type(scope): description
+# 示例: feat(ocpp-1-6): 添加中文注释
+
+# 请删除所有注释行后填写内容
