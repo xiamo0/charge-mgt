@@ -1,0 +1,23 @@
+[package]
+name = "charge_mgt_cloud"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json.workspace = true
+axum.workspace = true
+thiserror = { workspace = true }
+tracing = { workspace = true }
+chrono = { workspace = true }
+
+ocpp_1_6 = { path = "../ocpp-1-6" }
+ocpp_2_0_1 = { path = "../ocpp-2-0-1" }
+ocpp_2_1 = { path = "../ocpp-2-1" }
+charge_mgt_common = { path = "../charge-mgt-common" }
+
+[dev-dependencies]
+tokio = { workspace = true }

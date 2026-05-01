@@ -1,0 +1,1 @@
+//! Charger state module

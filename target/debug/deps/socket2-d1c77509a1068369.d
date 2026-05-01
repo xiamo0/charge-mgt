@@ -1,0 +1,11 @@
+/Users/molinyi/Documents/GitHub/charge-mgt/target/debug/deps/libsocket2-d1c77509a1068369.rmeta: /Users/molinyi/.cargo/registry/src/index.crates.io-6f17d22bba15001f/socket2-0.6.3/src/lib.rs /Users/molinyi/.cargo/registry/src/index.crates.io-6f17d22bba15001f/socket2-0.6.3/src/sockaddr.rs /Users/molinyi/.cargo/registry/src/index.crates.io-6f17d22bba15001f/socket2-0.6.3/src/socket.rs /Users/molinyi/.cargo/registry/src/index.crates.io-6f17d22bba15001f/socket2-0.6.3/src/sockref.rs /Users/molinyi/.cargo/registry/src/index.crates.io-6f17d22bba15001f/socket2-0.6.3/src/sys/unix.rs
+
+/Users/molinyi/Documents/GitHub/charge-mgt/target/debug/deps/libsocket2-d1c77509a1068369.rlib: /Users/molinyi/.cargo/registry/src/index.crates.io-6f17d22bba15001f/socket2-0.6.3/src/lib.rs /Users/molinyi/.cargo/registry/src/index.crates.io-6f17d22bba15001f/socket2-0.6.3/src/sockaddr.rs /Users/molinyi/.cargo/registry/src/index.crates.io-6f17d22bba15001f/socket2-0.6.3/src/socket.rs /Users/molinyi/.cargo/registry/src/index.crates.io-6f17d22bba15001f/socket2-0.6.3/src/sockref.rs /Users/molinyi/.cargo/registry/src/index.crates.io-6f17d22bba15001f/socket2-0.6.3/src/sys/unix.rs
+
+/Users/molinyi/Documents/GitHub/charge-mgt/target/debug/deps/socket2-d1c77509a1068369.d: /Users/molinyi/.cargo/registry/src/index.crates.io-6f17d22bba15001f/socket2-0.6.3/src/lib.rs /Users/molinyi/.cargo/registry/src/index.crates.io-6f17d22bba15001f/socket2-0.6.3/src/sockaddr.rs /Users/molinyi/.cargo/registry/src/index.crates.io-6f17d22bba15001f/socket2-0.6.3/src/socket.rs /Users/molinyi/.cargo/registry/src/index.crates.io-6f17d22bba15001f/socket2-0.6.3/src/sockref.rs /Users/molinyi/.cargo/registry/src/index.crates.io-6f17d22bba15001f/socket2-0.6.3/src/sys/unix.rs
+
+/Users/molinyi/.cargo/registry/src/index.crates.io-6f17d22bba15001f/socket2-0.6.3/src/lib.rs:
+/Users/molinyi/.cargo/registry/src/index.crates.io-6f17d22bba15001f/socket2-0.6.3/src/sockaddr.rs:
+/Users/molinyi/.cargo/registry/src/index.crates.io-6f17d22bba15001f/socket2-0.6.3/src/socket.rs:
+/Users/molinyi/.cargo/registry/src/index.crates.io-6f17d22bba15001f/socket2-0.6.3/src/sockref.rs:
+/Users/molinyi/.cargo/registry/src/index.crates.io-6f17d22bba15001f/socket2-0.6.3/src/sys/unix.rs:

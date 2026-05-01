@@ -1,0 +1,60 @@
+//! Mock Handlers for OCPP 1.6
+//!
+//! These mock handlers are used for integration testing in upper layers.
+//! They allow configurable behavior for testing different scenarios.
+
+pub mod mock_authorize_handler;
+pub mod mock_boot_notification_handler;
+pub mod mock_heartbeat_handler;
+pub mod mock_start_transaction_handler;
+pub mod mock_stop_transaction_handler;
+pub mod mock_meter_values_handler;
+pub mod mock_status_notification_handler;
+pub mod mock_remote_start_transaction_handler;
+pub mod mock_remote_stop_transaction_handler;
+pub mod mock_change_availability_handler;
+pub mod mock_change_configuration_handler;
+pub mod mock_get_configuration_handler;
+pub mod mock_clear_cache_handler;
+pub mod mock_unlock_connector_handler;
+pub mod mock_data_transfer_handler;
+pub mod mock_get_diagnostics_handler;
+pub mod mock_update_firmware_handler;
+pub mod mock_diagnostics_status_notification_handler;
+pub mod mock_firmware_status_notification_handler;
+pub mod mock_reserve_now_handler;
+pub mod mock_cancel_reservation_handler;
+pub mod mock_send_local_list_handler;
+pub mod mock_get_local_list_version_handler;
+pub mod mock_set_charging_profile_handler;
+pub mod mock_clear_charging_profile_handler;
+pub mod mock_get_composite_schedule_handler;
+pub mod mock_trigger_message_handler;
+
+pub use mock_authorize_handler::MockAuthorizeHandler;
+pub use mock_boot_notification_handler::MockBootNotificationHandler;
+pub use mock_heartbeat_handler::MockHeartbeatHandler;
+pub use mock_start_transaction_handler::MockStartTransactionHandler;
+pub use mock_stop_transaction_handler::MockStopTransactionHandler;
+pub use mock_meter_values_handler::MockMeterValuesHandler;
+pub use mock_status_notification_handler::MockStatusNotificationHandler;
+pub use mock_remote_start_transaction_handler::MockRemoteStartTransactionHandler;
+pub use mock_remote_stop_transaction_handler::MockRemoteStopTransactionHandler;
+pub use mock_change_availability_handler::MockChangeAvailabilityHandler;
+pub use mock_change_configuration_handler::MockChangeConfigurationHandler;
+pub use mock_get_configuration_handler::MockGetConfigurationHandler;
+pub use mock_clear_cache_handler::MockClearCacheHandler;
+pub use mock_unlock_connector_handler::MockUnlockConnectorHandler;
+pub use mock_data_transfer_handler::MockDataTransferHandler;
+pub use mock_get_diagnostics_handler::MockGetDiagnosticsHandler;
+pub use mock_update_firmware_handler::MockUpdateFirmwareHandler;
+pub use mock_diagnostics_status_notification_handler::MockDiagnosticsStatusNotificationHandler;
+pub use mock_firmware_status_notification_handler::MockFirmwareStatusNotificationHandler;
+pub use mock_reserve_now_handler::MockReserveNowHandler;
+pub use mock_cancel_reservation_handler::MockCancelReservationHandler;
+pub use mock_send_local_list_handler::MockSendLocalListHandler;
+pub use mock_get_local_list_version_handler::MockGetLocalListVersionHandler;
+pub use mock_set_charging_profile_handler::MockSetChargingProfileHandler;
+pub use mock_clear_charging_profile_handler::MockClearChargingProfileHandler;
+pub use mock_get_composite_schedule_handler::MockGetCompositeScheduleHandler;
+pub use mock_trigger_message_handler::MockTriggerMessageHandler;
