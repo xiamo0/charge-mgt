@@ -1,4 +1,4 @@
-name: CI
+name: Rust CI
 
 on:
   push:
@@ -11,18 +11,15 @@ env:
 
 jobs:
   ci:
-    name: Rust check
+    name: 代码质量检查
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Rust
-        uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ env.RUST_VERSION }}
-          profile: minimal
-          override: true
 
       - name: Check formatting
         run: cargo fmt --check
