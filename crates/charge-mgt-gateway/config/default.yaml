@@ -1,0 +1,17 @@
+gateway:
+  id: "gateway-001"
+  host: "192.168.1.100"
+
+device:
+  listen_addr: "0.0.0.0"
+  listen_port: 9000
+
+cloud:
+  api_url: "https://cloud.example.com"
+  api_key: "your-api-key"
+
+kafka:
+  hosts:
+    - "localhost:5672"
+  exchange: "charge_mgt"
+  routing_key_prefix: "gateway"
