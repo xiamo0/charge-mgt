@@ -4,15 +4,14 @@ use tokio::net::TcpListener;
 use tokio_tungstenite::accept_async;
 use tracing::{error, info, warn};
 
-use crate::cloud::MockKafkaProducer;
+use crate::cloud::{ConnectionManager, KafkaProducer};
 use crate::config::DeviceConfig;
 use crate::error::{GatewayError, Result};
-use crate::state::AppState;
 
 pub struct WebSocketServer {
     config: DeviceConfig,
-    state: Arc<AppState>,
-    kafka_producer: Arc<MockKafkaProducer>,
+    connection_manager: Arc<ConnectionManager>,
+    kafka_producer: Arc<KafkaProducer>,
     gateway_id: String,
     gateway_host: String,
 }
@@ -20,14 +19,14 @@ pub struct WebSocketServer {
 impl WebSocketServer {
     pub fn new(
         config: DeviceConfig,
-        state: Arc<AppState>,
-        kafka_producer: Arc<MockKafkaProducer>,
+        connection_manager: Arc<ConnectionManager>,
+        kafka_producer: Arc<KafkaProducer>,
         gateway_id: String,
         gateway_host: String,
     ) -> Self {
         Self {
             config,
-            state,
+            connection_manager,
             kafka_producer,
             gateway_id,
             gateway_host,
@@ -51,16 +50,14 @@ impl WebSocketServer {
             match listener.accept().await {
                 Ok((stream, peer_addr)) => {
                     info!("New connection from: {}", peer_addr);
-                    let state = self.state.clone();
-                    let config = self.config.clone();
+                    let connection_manager = self.connection_manager.clone();
                     let kafka_producer = self.kafka_producer.clone();
                     let gateway_id = self.gateway_id.clone();
                     let gateway_host = self.gateway_host.clone();
                     tokio::spawn(handle_connection(
                         stream,
                         peer_addr,
-                        state,
-                        config,
+                        connection_manager,
                         kafka_producer,
                         gateway_id,
                         gateway_host,
@@ -77,9 +74,8 @@ impl WebSocketServer {
 async fn handle_connection(
     stream: tokio::net::TcpStream,
     peer_addr: SocketAddr,
-    state: Arc<AppState>,
-    config: DeviceConfig,
-    kafka_producer: Arc<MockKafkaProducer>,
+    connection_manager: Arc<ConnectionManager>,
+    kafka_producer: Arc<KafkaProducer>,
     gateway_id: String,
     gateway_host: String,
 ) {
@@ -91,20 +87,21 @@ async fn handle_connection(
         }
     };
 
-    let (mut write, mut read) = ws_stream.split();
+    let (write, read) = ws_stream.split();
 
     use futures_util::{SinkExt, StreamExt};
     use tokio_tungstenite::tungstenite::Message;
 
     let mut connection = crate::device::connection::Connection::new(
         peer_addr,
-        state,
-        config,
+        connection_manager,
         kafka_producer,
         gateway_id,
         gateway_host,
     );
 
+    let mut read = read;
+    let mut write = write;
     while let Some(msg) = read.next().await {
         match msg {
             Ok(Message::Text(text)) => {
@@ -123,7 +120,7 @@ async fn handle_connection(
                             serde_json::json!([4, "", "InternalError", e.to_string(), {}])
                                 .to_string();
                         if let Err(e) = write.send(Message::Text(error_response)).await {
-                            error!("Failed to send error response: {}", e);
+                            error!("Failed to send error response to {}: {}", peer_addr, e);
                             break;
                         }
                     }

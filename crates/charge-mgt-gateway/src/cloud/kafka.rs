@@ -1,20 +1,29 @@
-use tracing::info;
+use rdkafka::producer::FutureProducer;
+use rdkafka::ClientConfig;
+use tracing::{error, info};
 
 use crate::cloud::message::CloudMessage;
 use crate::config::KafkaConfig;
 use crate::error::{GatewayError, Result};
 
 pub struct KafkaProducer {
+    producer: FutureProducer,
     topic_prefix: String,
 }
 
 impl KafkaProducer {
     pub async fn new(config: &KafkaConfig) -> Result<Self> {
-        info!(
-            "Kafka producer created (mock mode), brokers: {}",
-            config.brokers
-        );
+        let producer: FutureProducer = ClientConfig::new()
+            .set("bootstrap.servers", &config.brokers)
+            .set("message.timeout.ms", "5000")
+            .set("queue.buffering.max.ms", "100")
+            .set("acks", "1")
+            .create()
+            .map_err(|e| GatewayError::Kafka(format!("Failed to create producer: {}", e)))?;
+
+        info!("Kafka producer connected to {}", config.brokers);
         Ok(Self {
+            producer,
             topic_prefix: config.topic_prefix.clone(),
         })
     }
@@ -24,12 +33,22 @@ impl KafkaProducer {
         let payload = serde_json::to_string(msg)
             .map_err(|e| GatewayError::Codec(format!("Failed to serialize message: {}", e)))?;
 
-        info!(
-            "[KAFKA] Message would be sent to Kafka, topic={}, payload_len={}",
-            topic,
-            payload.len()
-        );
+        let record = rdkafka::producer::FutureRecord::to(&topic)
+            .payload(&payload)
+            .key(&msg.charge_point_id);
 
+        self.producer
+            .send(record, std::time::Duration::from_secs(5))
+            .await
+            .map_err(|(e, _)| {
+                error!("Failed to send message to Kafka: {}", e);
+                GatewayError::Kafka(format!("Send failed: {}", e))
+            })?;
+
+        info!(
+            "[KAFKA] Message sent to topic={}, key={}",
+            topic, msg.charge_point_id
+        );
         Ok(())
     }
 }

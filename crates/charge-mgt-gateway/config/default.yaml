@@ -11,7 +11,5 @@ cloud:
   api_key: "your-api-key"
 
 kafka:
-  hosts:
-    - "localhost:5672"
-  exchange: "charge_mgt"
-  routing_key_prefix: "gateway"
+  brokers: "127.0.0.1:9092"
+  topic_prefix: "charge_mgt"

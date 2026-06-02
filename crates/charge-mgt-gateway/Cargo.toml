@@ -22,6 +22,9 @@ futures-util = "0.3"
 reqwest = { version = "0.11", features = ["json"] }
 config = "0.14"
 
+# Kafka
+rdkafka = { version = "0.36", features = ["cmake-build"] }
+
 ocpp_1_6 = { path = "../ocpp-1-6" }
 ocpp_2_0_1 = { path = "../ocpp-2-0-1" }
 ocpp_2_1 = { path = "../ocpp-2-1" }

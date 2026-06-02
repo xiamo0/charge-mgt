@@ -19,7 +19,7 @@ async fn main() {
     };
 
     info!("Initializing application...");
-    let app = match Application::new(config) {
+    let app = match Application::new(config).await {
         Ok(app) => app,
         Err(e) => {
             error!("Failed to create application: {}", e);

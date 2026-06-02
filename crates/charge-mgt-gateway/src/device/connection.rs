@@ -3,25 +3,23 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use tracing::{error, info, warn};
 
-use crate::cloud::{CloudMessage, CloudMessageInput, MockKafkaProducer};
-use crate::config::DeviceConfig;
+use crate::cloud::{
+    CloudMessage, CloudMessageInput, ConnectionManager, ConnectionMeta, KafkaProducer,
+};
 use crate::error::{GatewayError, Result};
-use crate::state::AppState;
 
 type Call = ocpp_1_6::envelope::Call;
 type CallResult = ocpp_1_6::envelope::CallResult;
 type CallError = ocpp_1_6::envelope::CallError;
 
-#[allow(dead_code)]
 pub struct Connection {
     pub id: String,
     pub addr: SocketAddr,
-    config: DeviceConfig,
     charge_point_vendor: Option<String>,
     charge_point_model: Option<String>,
     charge_point_id: Option<String>,
-    state: Arc<AppState>,
-    kafka_producer: Arc<MockKafkaProducer>,
+    connection_manager: Arc<ConnectionManager>,
+    kafka_producer: Arc<KafkaProducer>,
     gateway_id: String,
     gateway_host: String,
 }
@@ -29,9 +27,8 @@ pub struct Connection {
 impl Connection {
     pub fn new(
         addr: SocketAddr,
-        state: Arc<AppState>,
-        config: DeviceConfig,
-        kafka_producer: Arc<MockKafkaProducer>,
+        connection_manager: Arc<ConnectionManager>,
+        kafka_producer: Arc<KafkaProducer>,
         gateway_id: String,
         gateway_host: String,
     ) -> Self {
@@ -41,8 +38,7 @@ impl Connection {
             charge_point_vendor: None,
             charge_point_model: None,
             charge_point_id: None,
-            state,
-            config,
+            connection_manager,
             kafka_producer,
             gateway_id,
             gateway_host,
@@ -68,33 +64,31 @@ impl Connection {
             call.action, call.unique_id
         );
 
-        let cloud_msg = self.build_cloud_message(&call);
+        let call_action = call.action.clone();
+        let call_unique_id = call.unique_id.clone();
+        let call_payload = call.payload.clone();
 
-        if let Err(e) = self.kafka_producer.send(&cloud_msg).await {
-            error!("Failed to send message to Kafka: {}", e);
-        }
-
-        let response = match call.action.as_str() {
+        let response = match call_action.as_str() {
             "BootNotification" => {
-                self.handle_boot_notification(call.unique_id, call.payload)
+                self.handle_boot_notification(call_unique_id, call_payload)
                     .await?
             }
-            "Heartbeat" => self.handle_heartbeat(call.unique_id).await?,
-            "Authorize" => self.handle_authorize(call.unique_id, call.payload).await?,
+            "Heartbeat" => self.handle_heartbeat(call_unique_id).await?,
+            "Authorize" => self.handle_authorize(call_unique_id, call_payload).await?,
             "StartTransaction" => {
-                self.handle_start_transaction(call.unique_id, call.payload)
+                self.handle_start_transaction(call_unique_id, call_payload)
                     .await?
             }
             "StopTransaction" => {
-                self.handle_stop_transaction(call.unique_id, call.payload)
+                self.handle_stop_transaction(call_unique_id, call_payload)
                     .await?
             }
             "MeterValues" => {
-                self.handle_meter_values(call.unique_id, call.payload)
+                self.handle_meter_values(call_unique_id, call_payload)
                     .await?
             }
             "StatusNotification" => {
-                self.handle_status_notification(call.unique_id, call.payload)
+                self.handle_status_notification(call_unique_id, call_payload)
                     .await?
             }
             _ => {
@@ -107,10 +101,25 @@ impl Connection {
             }
         };
 
+        let cloud_msg = self.build_cloud_message(&call);
+
+        match self.kafka_producer.send(&cloud_msg).await {
+            Ok(()) => {
+                let topic = format!("{}.{}", cloud_msg.topic(), cloud_msg.charge_point_id);
+                info!("[KAFKA] Send success: msg_id={}, topic={}, action={}",
+                    cloud_msg.unique_id, topic, cloud_msg.action);
+            }
+            Err(e) => {
+                let topic = format!("{}.{}", cloud_msg.topic(), cloud_msg.charge_point_id);
+                error!("[KAFKA] Send failed: msg_id={}, topic={}, action={}, error={}",
+                    cloud_msg.unique_id, topic, cloud_msg.action, e);
+            }
+        }
+
         Ok(response)
     }
 
-    fn build_cloud_message(&self, call: &Call) -> CloudMessage {
+    pub fn build_cloud_message(&self, call: &Call) -> CloudMessage {
         let input = CloudMessageInput {
             gateway_id: self.gateway_id.clone(),
             gateway_ip: self.gateway_host.clone(),
@@ -130,7 +139,7 @@ impl Connection {
         CloudMessage::new(input, call.payload.clone())
     }
 
-    async fn handle_boot_notification(
+    pub async fn handle_boot_notification(
         &mut self,
         unique_id: String,
         payload: Value,
@@ -170,13 +179,14 @@ impl Connection {
             .clone()
             .unwrap_or_else(|| self.id.clone());
 
-        self.state
-            .register_charge_point(
-                charge_point_id.clone(),
-                charge_point_vendor.clone(),
-                "OCPP-1.6".to_string(),
-            )
-            .await;
+        let meta = ConnectionMeta {
+            charge_point_id: charge_point_id.clone(),
+            vendor: charge_point_vendor.clone(),
+            protocol_version: "OCPP-1.6".to_string(),
+            connected_at: chrono::Utc::now(),
+        };
+        self.connection_manager.add_connection(charge_point_id.clone(), meta).await;
+        info!("Registered charge point {} to connection manager", charge_point_id);
 
         let response_payload = serde_json::json!({
             "status": "Accepted",
@@ -190,7 +200,7 @@ impl Connection {
         ))
     }
 
-    async fn handle_heartbeat(&self, unique_id: String) -> Result<Option<String>> {
+    pub async fn handle_heartbeat(&self, unique_id: String) -> Result<Option<String>> {
         let response_payload = serde_json::json!({
             "currentTime": chrono::Utc::now().to_rfc3339()
         });
@@ -201,7 +211,7 @@ impl Connection {
         ))
     }
 
-    async fn handle_authorize(&self, unique_id: String, payload: Value) -> Result<Option<String>> {
+    pub async fn handle_authorize(&self, unique_id: String, payload: Value) -> Result<Option<String>> {
         let id_tag = payload
             .get("idTag")
             .and_then(|v| v.as_str())
@@ -224,7 +234,7 @@ impl Connection {
         ))
     }
 
-    async fn handle_start_transaction(
+    pub async fn handle_start_transaction(
         &self,
         unique_id: String,
         payload: Value,
@@ -260,7 +270,7 @@ impl Connection {
         ))
     }
 
-    async fn handle_stop_transaction(
+    pub async fn handle_stop_transaction(
         &self,
         unique_id: String,
         payload: Value,
@@ -284,7 +294,7 @@ impl Connection {
         ))
     }
 
-    async fn handle_meter_values(
+    pub async fn handle_meter_values(
         &self,
         unique_id: String,
         payload: Value,
@@ -310,7 +320,7 @@ impl Connection {
         ))
     }
 
-    async fn handle_status_notification(
+    pub async fn handle_status_notification(
         &self,
         unique_id: String,
         payload: Value,
@@ -336,7 +346,7 @@ impl Connection {
         ))
     }
 
-    fn create_call_error(&self, unique_id: &str, error_code: &str, error_desc: &str) -> String {
+    pub fn create_call_error(&self, unique_id: &str, error_code: &str, error_desc: &str) -> String {
         let error = CallError::new(unique_id, error_code, error_desc);
         serde_json::to_string(&error)
             .unwrap_or_else(|_| r#"[4,"","GenericError","Error",{}]"#.to_string())
@@ -345,7 +355,7 @@ impl Connection {
     pub async fn on_disconnect(&mut self) {
         if let Some(ref id) = self.charge_point_id {
             info!("Disconnecting charge point: {}", id);
-            self.state.remove_charge_point(id).await;
+            self.connection_manager.remove_connection(id).await;
         }
     }
 }
