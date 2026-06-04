@@ -10,6 +10,22 @@ cloud:
   api_url: "https://cloud.example.com"
   api_key: "your-api-key"
 
+# 响应通道模式: "redis" (BLPOP 同步等待) 或 "kafka" (Consumer + PendingTracker)
+response_channel: "kafka"
+
+redis:
+  url: "redis://127.0.0.1:6379"
+  response_timeout_secs: 5
+  key_ttl_secs: 10
+
 kafka:
   brokers: "127.0.0.1:9092"
   topic_prefix: "charge_mgt"
+  # 上行 topic 后缀 (充电桩请求 → 云平台)
+  req_topic_suffix: "req"
+  # 下行 topic 后缀 (云平台响应+命令 → Gateway), 仅 kafka 模式使用
+  resp_topic_suffix: "resp"
+  # 云平台命令 topic 后缀, 仅 redis 模式使用 (kafka 模式合并在 resp 中)
+  cmd_topic_suffix: "cmd"
+  # 响应超时秒数, 仅 kafka 模式使用
+  response_timeout_secs: 30

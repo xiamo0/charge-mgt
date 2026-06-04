@@ -20,6 +20,9 @@ pub enum GatewayError {
     #[error("Kafka error: {0}")]
     Kafka(String),
 
+    #[error("Redis error: {0}")]
+    Redis(String),
+
     #[error("Cloud API error: {0}")]
     CloudApi(String),
 

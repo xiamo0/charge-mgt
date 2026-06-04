@@ -9,6 +9,7 @@ use crate::error::{GatewayError, Result};
 pub struct KafkaProducer {
     producer: FutureProducer,
     topic_prefix: String,
+    req_topic_suffix: String,
 }
 
 impl KafkaProducer {
@@ -25,11 +26,12 @@ impl KafkaProducer {
         Ok(Self {
             producer,
             topic_prefix: config.topic_prefix.clone(),
+            req_topic_suffix: config.req_topic_suffix.clone(),
         })
     }
 
     pub async fn send(&self, msg: &CloudMessage) -> Result<()> {
-        let topic = format!("{}.{}", self.topic_prefix, msg.topic());
+        let topic = msg.req_topic(&self.topic_prefix, &self.req_topic_suffix);
         let payload = serde_json::to_string(msg)
             .map_err(|e| GatewayError::Codec(format!("Failed to serialize message: {}", e)))?;
 
@@ -55,6 +57,7 @@ impl KafkaProducer {
 
 pub struct MockKafkaProducer {
     topic_prefix: String,
+    req_topic_suffix: String,
 }
 
 impl MockKafkaProducer {
@@ -65,11 +68,12 @@ impl MockKafkaProducer {
         );
         Self {
             topic_prefix: config.topic_prefix.clone(),
+            req_topic_suffix: config.req_topic_suffix.clone(),
         }
     }
 
     pub async fn send(&self, msg: &CloudMessage) -> Result<()> {
-        let topic = format!("{}.{}", self.topic_prefix, msg.topic());
+        let topic = msg.req_topic(&self.topic_prefix, &self.req_topic_suffix);
         let payload = serde_json::to_string(msg)
             .map_err(|e| GatewayError::Codec(format!("Failed to serialize: {}", e)))?;
 
@@ -86,12 +90,17 @@ impl MockKafkaProducer {
 #[cfg(test)]
 mod tests {
     use crate::cloud::{CloudMessage, CloudMessageInput, MockKafkaProducer};
+    use crate::config::KafkaConfig;
 
     #[tokio::test]
     async fn test_mock_kafka_send() {
-        let config = crate::config::KafkaConfig {
+        let config = KafkaConfig {
             brokers: "localhost:9092".to_string(),
             topic_prefix: "test".to_string(),
+            req_topic_suffix: "req".to_string(),
+            resp_topic_suffix: "resp".to_string(),
+            cmd_topic_suffix: "cmd".to_string(),
+            response_timeout_secs: 30,
         };
 
         let producer = MockKafkaProducer::new(&config);

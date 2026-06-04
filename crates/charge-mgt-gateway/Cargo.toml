@@ -25,6 +25,9 @@ config = "0.14"
 # Kafka
 rdkafka = { version = "0.36", features = ["cmake-build"] }
 
+# Redis (条件依赖，response_channel = redis 模式时使用)
+redis = { version = "0.25", features = ["aio", "tokio-comp"] }
+
 ocpp_1_6 = { path = "../ocpp-1-6" }
 ocpp_2_0_1 = { path = "../ocpp-2-0-1" }
 ocpp_2_1 = { path = "../ocpp-2-1" }

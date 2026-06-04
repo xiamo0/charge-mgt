@@ -5,7 +5,18 @@ pub struct Config {
     pub gateway: GatewayConfig,
     pub device: DeviceConfig,
     pub cloud: CloudConfig,
+    pub response_channel: ResponseChannelMode,
+    #[serde(default)]
+    pub redis: RedisConfig,
     pub kafka: KafkaConfig,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum ResponseChannelMode {
+    #[default]
+    Redis,
+    Kafka,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -26,10 +37,56 @@ pub struct CloudConfig {
     pub api_key: String,
 }
 
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct RedisConfig {
+    #[serde(default = "default_redis_url")]
+    pub url: String,
+    #[serde(default = "default_response_timeout")]
+    pub response_timeout_secs: u64,
+    #[serde(default = "default_key_ttl")]
+    pub key_ttl_secs: u64,
+}
+
+fn default_redis_url() -> String {
+    "redis://127.0.0.1:6379".to_string()
+}
+
+fn default_response_timeout() -> u64 {
+    5
+}
+
+fn default_key_ttl() -> u64 {
+    10
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct KafkaConfig {
     pub brokers: String,
     pub topic_prefix: String,
+    #[serde(default = "default_req_suffix")]
+    pub req_topic_suffix: String,
+    #[serde(default = "default_resp_suffix")]
+    pub resp_topic_suffix: String,
+    #[serde(default = "default_cmd_suffix")]
+    pub cmd_topic_suffix: String,
+    #[serde(default = "default_kafka_timeout")]
+    pub response_timeout_secs: u64,
+}
+
+fn default_req_suffix() -> String {
+    "req".to_string()
+}
+
+fn default_resp_suffix() -> String {
+    "resp".to_string()
+}
+
+fn default_cmd_suffix() -> String {
+    "cmd".to_string()
+}
+
+fn default_kafka_timeout() -> u64 {
+    30
 }
 
 impl Config {
@@ -64,9 +121,19 @@ mod tests {
                 "api_url": "https://cloud.example.com",
                 "api_key": "test_key"
             },
+            "response_channel": "redis",
+            "redis": {
+                "url": "redis://127.0.0.1:6379",
+                "response_timeout_secs": 5,
+                "key_ttl_secs": 10
+            },
             "kafka": {
                 "brokers": "localhost:9092",
-                "topic_prefix": "charge_mgt"
+                "topic_prefix": "charge_mgt",
+                "req_topic_suffix": "req",
+                "resp_topic_suffix": "resp",
+                "cmd_topic_suffix": "cmd",
+                "response_timeout_secs": 30
             }
         }"#;
 
@@ -75,5 +142,24 @@ mod tests {
         assert_eq!(config.device.listen_port, 9000);
         assert_eq!(config.cloud.api_url, "https://cloud.example.com");
         assert_eq!(config.kafka.brokers, "localhost:9092");
+        assert_eq!(config.response_channel, ResponseChannelMode::Redis);
+        assert_eq!(config.redis.response_timeout_secs, 5);
+        assert_eq!(config.kafka.req_topic_suffix, "req");
+        assert_eq!(config.kafka.resp_topic_suffix, "resp");
+    }
+
+    #[test]
+    fn test_config_kafka_mode() {
+        let json = r#"{
+            "gateway": {"id": "gw-02", "host": "10.0.0.1"},
+            "device": {"listen_addr": "0.0.0.0", "listen_port": 9000},
+            "cloud": {"api_url": "https://cloud.example.com", "api_key": "key"},
+            "response_channel": "kafka",
+            "kafka": {"brokers": "localhost:9092", "topic_prefix": "charge_mgt"}
+        }"#;
+
+        let config: Config = serde_json::from_str(json).unwrap();
+        assert_eq!(config.response_channel, ResponseChannelMode::Kafka);
+        assert_eq!(config.kafka.req_topic_suffix, "req"); // default
     }
 }
