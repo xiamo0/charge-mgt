@@ -6,15 +6,27 @@ license.workspace = true
 authors.workspace = true
 
 [dependencies]
-tokio = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
 serde = { workspace = true }
 serde_json.workspace = true
 thiserror = { workspace = true }
 tracing = { workspace = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 chrono = { workspace = true }
+uuid = { workspace = true }
+
+tokio-tungstenite = "0.21"
+tokio-util = "0.7"
+futures-util = "0.3"
+rustyline = "14"
+colored = "2"
+strsim = "0.11"
 
 ocpp_1_6 = { path = "../ocpp-1-6" }
-charge_mgt_common = { path = "../charge-mgt-common" }
+
+[[bin]]
+name = "charge_mgt_simulator"
+path = "src/main.rs"
 
 [dev-dependencies]
-tokio = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
