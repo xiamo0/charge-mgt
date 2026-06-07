@@ -1,3 +1,7 @@
+//! Kafka 消息生产者
+//!
+//! 将充电桩上行消息发布到按厂商分区的请求主题。
+
 use rdkafka::producer::FutureProducer;
 use rdkafka::ClientConfig;
 use tracing::{error, info};
@@ -6,13 +10,18 @@ use crate::cloud::message::CloudMessage;
 use crate::config::KafkaConfig;
 use crate::error::{GatewayError, Result};
 
+/// Kafka 生产者，将 CloudMessage 发布到请求主题
 pub struct KafkaProducer {
+    /// rdkafka 异步生产者
     producer: FutureProducer,
+    /// 主题名前缀
     topic_prefix: String,
+    /// 请求主题后缀
     req_topic_suffix: String,
 }
 
 impl KafkaProducer {
+    /// 连接 Kafka 集群并创建生产者
     pub async fn new(config: &KafkaConfig) -> Result<Self> {
         let producer: FutureProducer = ClientConfig::new()
             .set("bootstrap.servers", &config.brokers)
@@ -22,7 +31,7 @@ impl KafkaProducer {
             .create()
             .map_err(|e| GatewayError::Kafka(format!("Failed to create producer: {}", e)))?;
 
-        info!("Kafka producer connected to {}", config.brokers);
+        info!("Kafka 生产者已连接: {}", config.brokers);
         Ok(Self {
             producer,
             topic_prefix: config.topic_prefix.clone(),
@@ -30,6 +39,7 @@ impl KafkaProducer {
         })
     }
 
+    /// 将消息序列化后发送到 `{prefix}.{req_suffix}.{vendor}` 主题
     pub async fn send(&self, msg: &CloudMessage) -> Result<()> {
         let topic = msg.req_topic(&self.topic_prefix, &self.req_topic_suffix);
         let payload = serde_json::to_string(msg)
@@ -43,27 +53,31 @@ impl KafkaProducer {
             .send(record, std::time::Duration::from_secs(5))
             .await
             .map_err(|(e, _)| {
-                error!("Failed to send message to Kafka: {}", e);
+                error!("Kafka 消息发送失败: {}", e);
                 GatewayError::Kafka(format!("Send failed: {}", e))
             })?;
 
         info!(
-            "[KAFKA] Message sent to topic={}, key={}",
+            "[KAFKA] 消息已发送，主题={}, 键={}",
             topic, msg.charge_point_id
         );
         Ok(())
     }
 }
 
+/// 模拟 Kafka 生产者，仅记录日志不实际发送（用于测试）
 pub struct MockKafkaProducer {
+    /// 主题名前缀
     topic_prefix: String,
+    /// 请求主题后缀
     req_topic_suffix: String,
 }
 
 impl MockKafkaProducer {
+    /// 创建模拟生产者
     pub fn new(config: &KafkaConfig) -> Self {
         info!(
-            "Mock Kafka producer created, prefix: {}",
+            "模拟 Kafka 生产者已创建，前缀: {}",
             config.topic_prefix
         );
         Self {
@@ -72,13 +86,14 @@ impl MockKafkaProducer {
         }
     }
 
+    /// 模拟发送，仅打印目标主题和 payload 长度
     pub async fn send(&self, msg: &CloudMessage) -> Result<()> {
         let topic = msg.req_topic(&self.topic_prefix, &self.req_topic_suffix);
         let payload = serde_json::to_string(msg)
             .map_err(|e| GatewayError::Codec(format!("Failed to serialize: {}", e)))?;
 
         info!(
-            "[MOCK] Message would be sent to Kafka, topic={}, payload_len={}",
+            "[MOCK] 模拟发送 Kafka 消息，主题={}, 载荷长度={}",
             topic,
             payload.len()
         );

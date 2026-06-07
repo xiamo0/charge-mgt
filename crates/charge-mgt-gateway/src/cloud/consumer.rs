@@ -1,3 +1,8 @@
+//! Kafka 消费者与连接管理
+//!
+//! - `ConnectionManager`：维护在线充电桩连接，支持下行消息推送
+//! - `KafkaConsumer`：订阅云端下行消息，转换为 OCPP 格式回传充电桩
+
 use rdkafka::consumer::{Consumer, StreamConsumer};
 use rdkafka::message::Message;
 use rdkafka::ClientConfig;
@@ -13,67 +18,82 @@ use crate::response_channel::{PendingRequestTracker, MessageDirection};
 
 use ocpp_1_6::envelope::{Call, CallError, CallResult};
 
+/// 单个充电桩连接的元数据，包含下行消息发送通道
 #[derive(Clone)]
 pub struct ConnectionMeta {
+    /// 充电桩 ID
     pub charge_point_id: String,
+    /// 充电桩厂商
     pub vendor: String,
+    /// OCPP 协议版本
     pub protocol_version: String,
+    /// 连接建立时间
     pub connected_at: chrono::DateTime<chrono::Utc>,
+    /// 下行消息发送通道，用于向充电桩 WebSocket 写回响应
     pub response_tx: mpsc::UnboundedSender<String>,
 }
 
+/// 充电桩连接注册表，以 charge_point_id 为键
 pub struct ConnectionManager {
+    /// 以 charge_point_id 为键的在线连接表
     connections: Arc<RwLock<std::collections::HashMap<String, ConnectionMeta>>>,
 }
 
 impl ConnectionManager {
+    /// 创建空的连接管理器
     pub fn new() -> Self {
         Self {
             connections: Arc::new(RwLock::new(std::collections::HashMap::new())),
         }
     }
 
+    /// 注册新连接
     pub async fn add_connection(&self, charge_point_id: String, meta: ConnectionMeta) {
         let mut connections = self.connections.write().await;
         connections.insert(charge_point_id, meta);
     }
 
+    /// 更新已有连接的元数据
     pub async fn update_connection(&self, charge_point_id: &str, meta: ConnectionMeta) {
         let mut connections = self.connections.write().await;
         connections.insert(charge_point_id.to_string(), meta);
     }
 
+    /// 移除断开的连接
     pub async fn remove_connection(&self, charge_point_id: &str) {
         let mut connections = self.connections.write().await;
         connections.remove(charge_point_id);
     }
 
+    /// 列出所有在线充电桩 ID
     pub async fn list_charge_points(&self) -> Vec<String> {
         let connections = self.connections.read().await;
         connections.keys().cloned().collect()
     }
 
+    /// 查询指定充电桩的连接信息
     pub async fn get_connection_info(&self, charge_point_id: &str) -> Option<ConnectionMeta> {
         let connections = self.connections.read().await;
         connections.get(charge_point_id).cloned()
     }
 
+    /// 向指定充电桩发送 OCPP 消息，连接不存在或通道关闭时返回 false
     pub async fn send_to_charge_point(&self, charge_point_id: &str, message: String) -> bool {
         match self.get_connection_info(charge_point_id).await {
             Some(meta) => {
                 if meta.response_tx.send(message).is_ok() {
-                    info!("Message sent to charge point {}", charge_point_id);
+                    info!("消息已发送至充电桩 {}", charge_point_id);
                     true
                 } else {
                     warn!(
-                        "Failed to send to charge point {} (channel closed)",
+                        "发送至充电桩 {} 失败（通道已关闭）",
                         charge_point_id
                     );
                     false
                 }
             }
             None => {
-                warn!("Charge point {} not connected, message dropped", charge_point_id);
+                warn!("充电桩 {} 未连接，消息已丢弃", charge_point_id);
                 false
             }
         }
@@ -86,16 +106,24 @@ impl Default for ConnectionManager {
     }
 }
 
+/// Kafka 消费者，根据响应通道模式订阅不同主题
 pub struct KafkaConsumer {
+    /// rdkafka 流式消费者
     consumer: StreamConsumer,
+    /// 充电桩连接管理器，用于下行消息推送
     connection_manager: Arc<ConnectionManager>,
+    /// 待响应请求跟踪器（Kafka 响应通道模式）
     pending_tracker: Option<Arc<PendingRequestTracker>>,
+    /// 主题名前缀
     topic_prefix: String,
+    /// 响应主题后缀（仅 Kafka 响应通道模式）
     resp_topic_suffix: Option<String>,
+    /// 当前网关 ID
     gateway_id: String,
 }
 
 impl KafkaConsumer {
+    /// Redis 模式：订阅 cmd 主题，接收云端下发的 Call 命令
     pub fn new_redis_mode(
         config: &KafkaConfig,
         gateway_id: &str,
@@ -116,7 +144,7 @@ impl KafkaConsumer {
             .subscribe(&[&cmd_topic])
             .map_err(|e| GatewayError::Kafka(format!("Failed to subscribe: {}", e)))?;
 
-        info!("Kafka consumer (redis mode) subscribed to: {}", cmd_topic);
+        info!("Kafka 消费者（Redis 模式）已订阅: {}", cmd_topic);
 
         Ok(Self {
             consumer,
@@ -128,6 +156,7 @@ impl KafkaConsumer {
         })
     }
 
+    /// Kafka 模式：订阅 resp 主题，接收云端 CallResult/CallError 响应
     pub fn new_kafka_mode(
         config: &KafkaConfig,
         gateway_id: &str,
@@ -149,7 +178,7 @@ impl KafkaConsumer {
             .subscribe(&[&resp_topic])
             .map_err(|e| GatewayError::Kafka(format!("Failed to subscribe: {}", e)))?;
 
-        info!("Kafka consumer (kafka mode) subscribed to: {}", resp_topic);
+        info!("Kafka 消费者（Kafka 模式）已订阅: {}", resp_topic);
 
         Ok(Self {
             consumer,
@@ -161,8 +190,9 @@ impl KafkaConsumer {
         })
     }
 
+    /// 持续消费 Kafka 消息并分发处理
     pub async fn run(&self) {
-        info!("Kafka consumer started");
+        info!("Kafka 消费者已启动");
         let stream = self.consumer.stream();
 
         futures_util::pin_mut!(stream);
@@ -176,23 +206,24 @@ impl KafkaConsumer {
                                 self.handle_downstream_message(cloud_msg).await;
                             }
                             Err(e) => {
-                                warn!("Failed to parse cloud message: {}", e);
+                                warn!("云端消息解析失败: {}", e);
                             }
                         }
                     }
                 }
                 Err(e) => {
-                    error!("Kafka error: {}", e);
+                    error!("Kafka 错误: {}", e);
                 }
             }
         }
     }
 
+    // 根据 message_type 分发到对应的 OCPP 消息构建逻辑
     async fn handle_downstream_message(&self, msg: CloudMessage) {
         let charge_point_id = &msg.charge_point_id;
 
         info!(
-            "Received downstream message: message_type={}, action={}, charge_point_id={}",
+            "收到下行消息: 类型={}, 动作={}, 充电桩={}",
             msg.message_type, msg.action, charge_point_id
         );
 
@@ -200,15 +231,16 @@ impl KafkaConsumer {
             "CallResult" => self.handle_call_result(&msg, charge_point_id).await,
             "CallError" => self.handle_call_error(&msg, charge_point_id).await,
             "Call" => self.handle_call(&msg, charge_point_id).await,
-            _ => warn!("Unknown message_type: {}", msg.message_type),
+            _ => warn!("未知消息类型: {}", msg.message_type),
         }
     }
 
+    // 匹配 pending tracker 中的 uniqueId，将响应路由到正确的 WebSocket 连接
     async fn handle_call_result(&self, msg: &CloudMessage, charge_point_id: &str) {
         let tracker = match &self.pending_tracker {
             Some(t) => t,
             None => {
-                warn!("CallResult received but no pending tracker (redis mode should not receive CallResult via Kafka)");
+                warn!("收到 CallResult 但无待响应跟踪器（Redis 模式不应通过 Kafka 接收 CallResult）");
                 self.connection_manager
                     .send_to_charge_point(
                         charge_point_id,
@@ -223,7 +255,7 @@ impl KafkaConsumer {
         match pending {
             Some(request) => {
                 info!(
-                    "Cloud CallResult matched pending request: uniqueId={}, action={}",
+                    "云端 CallResult 已匹配待响应请求: uniqueId={}, 动作={}",
                     request.unique_id, request.action
                 );
                 let call_result_json = build_ocpp_call_result(&msg.unique_id, msg.payload.clone());
@@ -231,7 +263,7 @@ impl KafkaConsumer {
             }
             None => {
                 warn!(
-                    "No pending request for CallResult uniqueId={}, forwarding directly to CP",
+                    "CallResult 无匹配待响应请求 uniqueId={}，直接转发至充电桩",
                     msg.unique_id
                 );
                 self.connection_manager
@@ -262,7 +294,7 @@ impl KafkaConsumer {
         match pending {
             Some(request) => {
                 info!(
-                    "Cloud CallError matched pending request: uniqueId={}, action={}",
+                    "云端 CallError 已匹配待响应请求: uniqueId={}, 动作={}",
                     request.unique_id, request.action
                 );
                 let error_json = build_ocpp_call_error(
@@ -283,6 +315,7 @@ impl KafkaConsumer {
         }
     }
 
+    // 云端下发的 Call 命令：转发至充电桩并注册下行 pending 请求
     async fn handle_call(&self, msg: &CloudMessage, charge_point_id: &str) {
         let call_json = build_ocpp_call(&msg.action, &msg.unique_id, msg.payload.clone());
 
@@ -306,16 +339,19 @@ impl KafkaConsumer {
     }
 }
 
+/// 将云端消息转换为 OCPP Call JSON
 fn build_ocpp_call(action: &str, unique_id: &str, payload: serde_json::Value) -> String {
     let call = Call::new(action, unique_id, payload);
     serde_json::to_string(&call).unwrap_or_default()
 }
 
+/// 将云端响应转换为 OCPP CallResult JSON
 fn build_ocpp_call_result(unique_id: &str, payload: serde_json::Value) -> String {
     let call_result = CallResult::new(unique_id, payload);
     serde_json::to_string(&call_result).unwrap_or_default()
 }
 
+/// 将云端错误转换为 OCPP CallError JSON
 fn build_ocpp_call_error(unique_id: &str, error_code: &str, error_description: &str) -> String {
     let call_error = CallError::new(unique_id, error_code, error_description);
     serde_json::to_string(&call_error).unwrap_or_default()

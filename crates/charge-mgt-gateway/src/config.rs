@@ -1,16 +1,28 @@
+//! 网关配置定义与加载
+//!
+//! 通过 `CONFIG_PATH` 环境变量指定配置文件路径，默认为 `config/default`。
+
 use serde::Deserialize;
 
+/// 网关完整配置
 #[derive(Debug, Clone, Deserialize)]
 pub struct Config {
+    /// 网关自身标识配置
     pub gateway: GatewayConfig,
+    /// WebSocket 监听配置
     pub device: DeviceConfig,
+    /// 云端 REST API 配置
     pub cloud: CloudConfig,
+    /// 云端响应回传方式
     pub response_channel: ResponseChannelMode,
+    /// Redis 配置（response_channel 为 redis 时使用）
     #[serde(default)]
     pub redis: RedisConfig,
+    /// Kafka 消息队列配置
     pub kafka: KafkaConfig,
 }
 
+/// 云端响应回传方式：Redis BLPOP 或 Kafka 响应主题
 #[derive(Debug, Clone, Deserialize, PartialEq, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum ResponseChannelMode {
@@ -19,30 +31,43 @@ pub enum ResponseChannelMode {
     Kafka,
 }
 
+/// 网关自身标识，用于 Kafka 主题路由
 #[derive(Debug, Clone, Deserialize)]
 pub struct GatewayConfig {
+    /// 网关唯一 ID，用于 Kafka 主题路由
     pub id: String,
+    /// 网关对外 IP 地址，写入上行消息元数据
     pub host: String,
 }
 
+/// WebSocket 监听地址配置
 #[derive(Debug, Clone, Deserialize)]
 pub struct DeviceConfig {
+    /// WebSocket 监听地址（如 `0.0.0.0`）
     pub listen_addr: String,
+    /// WebSocket 监听端口
     pub listen_port: u16,
 }
 
+/// 云端 REST API 配置
 #[derive(Debug, Clone, Deserialize)]
 pub struct CloudConfig {
+    /// 云端 API 基础 URL
     pub api_url: String,
+    /// API 认证密钥（Bearer Token）
     pub api_key: String,
 }
 
+/// Redis 响应通道配置
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct RedisConfig {
+    /// Redis 连接地址
     #[serde(default = "default_redis_url")]
     pub url: String,
+    /// BLPOP 等待云端响应的超时时间（秒）
     #[serde(default = "default_response_timeout")]
     pub response_timeout_secs: u64,
+    /// 响应键的 TTL（秒）
     #[serde(default = "default_key_ttl")]
     pub key_ttl_secs: u64,
 }
@@ -59,16 +84,23 @@ fn default_key_ttl() -> u64 {
     10
 }
 
+/// Kafka 消息队列配置
 #[derive(Debug, Clone, Deserialize)]
 pub struct KafkaConfig {
+    /// Kafka broker 地址列表（逗号分隔）
     pub brokers: String,
+    /// 主题名前缀（如 `charge_mgt`）
     pub topic_prefix: String,
+    /// 上行请求主题后缀，完整主题：`{prefix}.{req_suffix}.{vendor}`
     #[serde(default = "default_req_suffix")]
     pub req_topic_suffix: String,
+    /// 响应主题后缀（Kafka 响应通道模式）
     #[serde(default = "default_resp_suffix")]
     pub resp_topic_suffix: String,
+    /// 命令主题后缀（Redis 响应通道模式）
     #[serde(default = "default_cmd_suffix")]
     pub cmd_topic_suffix: String,
+    /// 待响应请求超时时间（秒，Kafka 响应通道模式）
     #[serde(default = "default_kafka_timeout")]
     pub response_timeout_secs: u64,
 }
@@ -90,6 +122,7 @@ fn default_kafka_timeout() -> u64 {
 }
 
 impl Config {
+    /// 从配置文件加载配置，路径由 `CONFIG_PATH` 环境变量决定
     pub fn load() -> Result<Self, config::ConfigError> {
         let config_path =
             std::env::var("CONFIG_PATH").unwrap_or_else(|_| "config/default".to_string());

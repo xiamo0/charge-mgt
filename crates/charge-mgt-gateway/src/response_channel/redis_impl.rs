@@ -1,3 +1,7 @@
+//! Redis 响应通道实现
+//!
+//! 云端将响应写入 `resp:{uniqueId}` 键后，网关通过 BLPOP 阻塞获取并回传充电桩。
+
 use redis::aio::MultiplexedConnection;
 use tokio::sync::mpsc;
 use tracing::{error, info, warn};
@@ -8,12 +12,16 @@ use crate::response_channel::ResponseChannel;
 
 use ocpp_1_6::envelope::{CallError, CallResult};
 
+/// 基于 Redis BLPOP 的响应通道
 pub struct RedisResponseChannel {
+    /// Redis 多路复用连接
     conn: MultiplexedConnection,
+    /// BLPOP 等待云端响应的超时时间（秒）
     timeout_secs: u64,
 }
 
 impl RedisResponseChannel {
+    /// 连接 Redis 并创建响应通道
     pub async fn new(config: &RedisConfig) -> Result<Self> {
         let client = redis::Client::open(config.url.as_str())
             .map_err(|e| GatewayError::Redis(format!("Failed to create client: {}", e)))?;
@@ -22,7 +30,7 @@ impl RedisResponseChannel {
             .await
             .map_err(|e| GatewayError::Redis(format!("Failed to connect: {}", e)))?;
 
-        info!("Redis connected to {}", config.url);
+        info!("Redis 已连接: {}", config.url);
         Ok(Self {
             conn,
             timeout_secs: config.response_timeout_secs,
@@ -44,7 +52,7 @@ impl ResponseChannel for RedisResponseChannel {
         tokio::spawn(async move {
             let key = format!("resp:{}", unique_id);
             info!(
-                "[REDIS] BLPOP waiting: key={}, action={}, cp={}, timeout={}s",
+                "[REDIS] BLPOP 等待中: 键={}, 动作={}, 充电桩={}, 超时={}秒",
                 key, action, charge_point_id, timeout_secs
             );
 
@@ -58,7 +66,7 @@ impl ResponseChannel for RedisResponseChannel {
             match result {
                 Ok(Some((_, payload))) => {
                     info!(
-                        "[REDIS] Response received: key={}, cp={}",
+                        "[REDIS] 收到响应: 键={}, 充电桩={}",
                         key, charge_point_id
                     );
                     let payload_value: serde_json::Value =
@@ -67,7 +75,7 @@ impl ResponseChannel for RedisResponseChannel {
                     let json = serde_json::to_string(&call_result).unwrap_or_default();
                     if response_tx.send(json).is_err() {
                         warn!(
-                            "[REDIS] Failed to send response to CP {} (channel closed)",
+                            "[REDIS] 响应发送失败，充电桩 {}（通道已关闭）",
                             charge_point_id
                         );
                     }
@@ -79,7 +87,7 @@ impl ResponseChannel for RedisResponseChannel {
                 }
                 Ok(None) => {
                     warn!(
-                        "[REDIS] Timeout: key={}, cp={}, action={}",
+                        "[REDIS] 等待超时: 键={}, 充电桩={}, 动作={}",
                         key, charge_point_id, action
                     );
                     let call_error = CallError::new(
@@ -92,7 +100,7 @@ impl ResponseChannel for RedisResponseChannel {
                 }
                 Err(e) => {
                     error!(
-                        "[REDIS] Error: key={}, cp={}, error={}",
+                        "[REDIS] 错误: 键={}, 充电桩={}, 错误={}",
                         key, charge_point_id, e
                     );
                     let call_error = CallError::new(

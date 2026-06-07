@@ -1,3 +1,8 @@
+//! Kafka 响应通道实现
+//!
+//! 通过 PendingRequestTracker 跟踪待响应请求，
+//! 由 KafkaConsumer 在收到响应主题消息时完成 uniqueId 匹配。
+
 use std::sync::Arc;
 use std::time::Instant;
 use tokio::sync::{mpsc, RwLock};
@@ -8,28 +13,40 @@ use crate::response_channel::ResponseChannel;
 
 use ocpp_1_6::envelope::CallError;
 
+/// 待响应请求的方向：上行（CP→云）或下行（云→CP）
 #[derive(Debug, Clone)]
 pub enum MessageDirection {
     Upstream,
     Downstream,
 }
 
+/// 一条待匹配响应的请求记录
 #[derive(Debug, Clone)]
 pub struct PendingRequest {
+    /// OCPP 消息唯一 ID，用于响应匹配
     pub unique_id: String,
+    /// 关联的充电桩 ID
     pub charge_point_id: String,
+    /// OCPP action 名称
     pub action: String,
+    /// 请求方向：上行（CP→云）或下行（云→CP）
     pub direction: MessageDirection,
+    /// 请求注册时间，用于超时判断
     pub created_at: Instant,
+    /// 响应回传通道，匹配成功后通过此通道发送 OCPP 响应
     pub response_tx: mpsc::UnboundedSender<String>,
 }
 
+/// 按 uniqueId 索引的待响应请求注册表，支持超时清理
 pub struct PendingRequestTracker {
+    /// 以 unique_id 为键的待响应请求表
     pending: Arc<RwLock<std::collections::HashMap<String, PendingRequest>>>,
+    /// 响应超时时间（秒）
     timeout_secs: u64,
 }
 
 impl PendingRequestTracker {
+    /// 创建跟踪器，指定响应超时秒数
     pub fn new(timeout_secs: u64) -> Self {
         Self {
             pending: Arc::new(RwLock::new(std::collections::HashMap::new())),
@@ -37,26 +54,29 @@ impl PendingRequestTracker {
         }
     }
 
+    /// 注册待响应请求
     pub async fn register(&self, request: PendingRequest) {
         let mut pending = self.pending.write().await;
         if pending.contains_key(&request.unique_id) {
             warn!(
-                "Duplicate uniqueId {}, overwriting previous pending request",
+                "重复的 uniqueId {}，将覆盖之前的待响应请求",
                 request.unique_id
             );
         }
         info!(
-            "Registered pending request: uniqueId={}, action={}",
+            "待响应请求已注册: uniqueId={}, 动作={}",
             request.unique_id, request.action
         );
         pending.insert(request.unique_id.clone(), request);
     }
 
+    /// 响应到达时移除并返回对应的待响应请求
     pub async fn remove(&self, unique_id: &str) -> Option<PendingRequest> {
         let mut pending = self.pending.write().await;
         pending.remove(unique_id)
     }
 
+    /// 充电桩断开时清理其所有待响应请求
     pub async fn remove_by_charge_point(
         &self,
         charge_point_id: &str,
@@ -75,14 +95,15 @@ impl PendingRequestTracker {
 
         if !removed.is_empty() {
             info!(
-                "Cleaned up {} pending requests for charge point {}",
-                removed.len(),
-                charge_point_id
+                "已清理充电桩 {} 的 {} 条待响应请求",
+                charge_point_id,
+                removed.len()
             );
         }
         removed
     }
 
+    /// 启动后台任务，每 5 秒扫描并清理超时请求
     pub fn start_timeout_eviction(self: &Arc<Self>) {
         let pending = self.pending.clone();
         let timeout_secs = self.timeout_secs;
@@ -104,7 +125,7 @@ impl PendingRequestTracker {
                 for key in timed_out_keys {
                     if let Some(request) = pending_guard.remove(&key) {
                         warn!(
-                            "Request timed out: uniqueId={}, action={}, cp={}",
+                            "请求超时: uniqueId={}, 动作={}, 充电桩={}",
                             request.unique_id, request.action, request.charge_point_id
                         );
 
@@ -121,7 +142,7 @@ impl PendingRequestTracker {
                             }
                             MessageDirection::Downstream => {
                                 warn!(
-                                    "Cloud command timed out waiting for CP response: action={}, cp={}",
+                                    "云端命令等待充电桩响应超时: 动作={}, 充电桩={}",
                                     request.action, request.charge_point_id
                                 );
                             }
@@ -133,11 +154,14 @@ impl PendingRequestTracker {
     }
 }
 
+/// 基于 Kafka 响应主题 + PendingRequestTracker 的响应通道
 pub struct KafkaResponseChannel {
+    /// 待响应请求跟踪器
     pending_tracker: Arc<PendingRequestTracker>,
 }
 
 impl KafkaResponseChannel {
+    /// 创建 Kafka 响应通道并启动超时清理任务
     pub fn new(config: &KafkaConfig) -> Arc<Self> {
         let tracker = Arc::new(PendingRequestTracker::new(config.response_timeout_secs));
         tracker.start_timeout_eviction();
@@ -146,6 +170,7 @@ impl KafkaResponseChannel {
         })
     }
 
+    /// 获取待响应请求跟踪器，供 KafkaConsumer 匹配响应使用
     pub fn pending_tracker(&self) -> Arc<PendingRequestTracker> {
         self.pending_tracker.clone()
     }
@@ -159,7 +184,7 @@ impl ResponseChannel for KafkaResponseChannel {
         action: String,
         response_tx: mpsc::UnboundedSender<String>,
     ) {
-        // Fire-and-forget: register in tracker, KafkaConsumer background task handles matching
+        // 异步注册到跟踪器，由 KafkaConsumer 后台任务完成响应匹配
         let tracker = self.pending_tracker.clone();
         tokio::spawn(async move {
             tracker

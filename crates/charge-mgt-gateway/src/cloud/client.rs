@@ -1,3 +1,7 @@
+//! 云端 REST API 客户端
+//!
+//! 负责与云端服务进行 HTTP 通信，包括设备注册与心跳上报。
+
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
@@ -5,28 +9,37 @@ use tracing::{error, info};
 use crate::config::CloudConfig;
 use crate::error::{GatewayError, Result};
 
+/// 云端 API 客户端，使用 Bearer Token 认证
 #[derive(Debug, Clone)]
 pub struct CloudApiClient {
+    /// HTTP 客户端实例
     client: Client,
+    /// 云端 API 基础 URL
     api_url: String,
+    /// API 认证密钥
     api_key: String,
 }
 
+/// 云端 API 通用响应结构
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ApiResponse<T> {
+    /// 请求是否成功
     pub success: bool,
+    /// 响应数据
     pub data: Option<T>,
+    /// 错误信息（失败时）
     pub error: Option<String>,
 }
 
 impl CloudApiClient {
+    /// 根据配置创建 HTTP 客户端，请求超时 30 秒
     pub fn new(config: &CloudConfig) -> Result<Self> {
         let client = Client::builder()
             .timeout(std::time::Duration::from_secs(30))
             .build()
             .map_err(|e| GatewayError::CloudApi(format!("Failed to create HTTP client: {}", e)))?;
 
-        info!("Cloud API client created, url: {}", config.api_url);
+        info!("云端 API 客户端已创建，地址: {}", config.api_url);
 
         Ok(Self {
             client,
@@ -35,12 +48,15 @@ impl CloudApiClient {
         })
     }
 
+    /// 向云端注册充电桩设备
     pub async fn register_device(&self, device_id: &str, vendor: &str) -> Result<()> {
         let url = format!("{}/api/devices/register", self.api_url);
 
         #[derive(Serialize)]
         struct RegisterRequest {
+            /// 设备 ID
             device_id: String,
+            /// 设备厂商
             vendor: String,
         }
 
@@ -57,11 +73,11 @@ impl CloudApiClient {
             .map_err(|e| GatewayError::CloudApi(format!("HTTP request failed: {}", e)))?;
 
         if response.status().is_success() {
-            info!("Device registered: {}", device_id);
+            info!("设备注册成功: {}", device_id);
             Ok(())
         } else {
             let status = response.status();
-            error!("Device registration failed: {} - {}", device_id, status);
+            error!("设备注册失败: {} - {}", device_id, status);
             Err(GatewayError::CloudApi(format!(
                 "Registration failed: {}",
                 status
@@ -69,6 +85,7 @@ impl CloudApiClient {
         }
     }
 
+    /// 向云端发送设备心跳，维持在线状态
     pub async fn send_heartbeat(&self, device_id: &str) -> Result<()> {
         let url = format!("{}/api/devices/{}/heartbeat", self.api_url, device_id);
 

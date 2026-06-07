@@ -1,3 +1,8 @@
+//! 单条 WebSocket 连接的消息处理
+//!
+//! 解析 OCPP Call 消息，转发至 Kafka，并根据 action 类型决定
+//! 立即响应或等待云端异步响应。
+
 use serde_json::Value;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -12,6 +17,7 @@ type Call = ocpp_1_6::envelope::Call;
 type CallResult = ocpp_1_6::envelope::CallResult;
 type CallError = ocpp_1_6::envelope::CallError;
 
+/// 判断该 action 是否需要等待云端响应（而非网关立即回复）
 fn requires_cloud_response(action: &str) -> bool {
     matches!(
         action,
@@ -19,21 +25,34 @@ fn requires_cloud_response(action: &str) -> bool {
     )
 }
 
+/// 代表一条充电桩 WebSocket 连接及其会话状态
 pub struct Connection {
+    /// 连接唯一 ID（BootNotification 前作为临时 charge_point_id）
     pub id: String,
+    /// 充电桩 TCP 远端地址
     pub addr: SocketAddr,
+    /// 充电桩厂商（BootNotification 后填充）
     charge_point_vendor: Option<String>,
+    /// 充电桩型号（BootNotification 后填充）
     charge_point_model: Option<String>,
+    /// 充电桩序列号/ID（BootNotification 后填充）
     charge_point_id: Option<String>,
+    /// 全局连接管理器
     connection_manager: Arc<ConnectionManager>,
+    /// Kafka 生产者，用于上行消息发布
     kafka_producer: Arc<KafkaProducer>,
+    /// 云端响应回传通道
     response_channel: Arc<dyn ResponseChannel>,
+    /// 所属网关 ID
     gateway_id: String,
+    /// 所属网关 IP
     gateway_host: String,
+    /// 响应发送通道，将 OCPP 响应写入 WebSocket 写任务
     response_tx: mpsc::UnboundedSender<String>,
 }
 
 impl Connection {
+    /// 创建新连接，初始时 charge_point_id 使用连接 UUID
     pub fn new(
         addr: SocketAddr,
         connection_manager: Arc<ConnectionManager>,
@@ -64,13 +83,14 @@ impl Connection {
             .unwrap_or_else(|| self.id.clone())
     }
 
+    /// 处理充电桩发来的 OCPP Call 消息：解析 → 转发 Kafka → 响应
     pub async fn handle_message(&mut self, text: &str) -> Result<()> {
-        info!("Raw message (len={}): {}", text.len(), text);
+        info!("原始消息（长度={}）: {}", text.len(), text);
         let call: Call = match serde_json::from_str(text) {
             Ok(c) => c,
             Err(e) => {
                 warn!(
-                    "Failed to parse message as OCPP Call: text_len={}, error={}",
+                    "OCPP Call 消息解析失败: 长度={}, 错误={}",
                     text.len(),
                     e
                 );
@@ -79,7 +99,7 @@ impl Connection {
         };
 
         info!(
-            "Received OCPP Call: action={}, uniqueId={}",
+            "收到 OCPP Call: 动作={}, uniqueId={}",
             call.action, call.unique_id
         );
 
@@ -89,13 +109,13 @@ impl Connection {
         match self.kafka_producer.send(&cloud_msg).await {
             Ok(()) => {
                 info!(
-                    "[KAFKA] Send success: action={}, uniqueId={}",
+                    "[KAFKA] 发送成功: 动作={}, uniqueId={}",
                     call.action, call.unique_id
                 );
             }
             Err(e) => {
                 error!(
-                    "[KAFKA] Send failed: action={}, uniqueId={}, error={}",
+                    "[KAFKA] 发送失败: 动作={}, uniqueId={}, 错误={}",
                     call.action, call.unique_id, e
                 );
             }
@@ -107,7 +127,7 @@ impl Connection {
 
         if requires_cloud_response(action) {
             info!(
-                "Pending request dispatched: action={}, uniqueId={}",
+                "待响应请求已分发: 动作={}, uniqueId={}",
                 action, unique_id
             );
 
@@ -125,6 +145,7 @@ impl Connection {
         Ok(())
     }
 
+    // 从消息 payload 中提取并更新连接元数据（厂商、序列号等）
     async fn process_meta(&mut self, action: &str, payload: &Value) {
         match action {
             "BootNotification" => self.process_boot_notification_meta(payload).await,
@@ -154,7 +175,7 @@ impl Connection {
             .map(|s| s.to_string());
 
         info!(
-            "BootNotification meta: vendor={}, model={}, serial={:?}",
+            "BootNotification 元数据: 厂商={}, 型号={}, 序列号={:?}",
             vendor, model, serial
         );
 
@@ -179,7 +200,7 @@ impl Connection {
         self.connection_manager
             .add_connection(new_id.clone(), meta)
             .await;
-        info!("Registered charge point {} to connection manager", new_id);
+        info!("充电桩 {} 已注册到连接管理器", new_id);
     }
 
     fn process_authorize_meta(&mut self, payload: &Value) {
@@ -188,7 +209,7 @@ impl Connection {
             .and_then(|v| v.as_str())
             .unwrap_or("unknown")
             .to_string();
-        info!("Authorize meta: idTag={}", id_tag);
+        info!("Authorize 元数据: idTag={}", id_tag);
     }
 
     fn process_start_transaction_meta(&mut self, payload: &Value) {
@@ -202,7 +223,7 @@ impl Connection {
             .unwrap_or("unknown")
             .to_string();
         info!(
-            "StartTransaction meta: connectorId={}, idTag={}",
+            "StartTransaction 元数据: 连接器={}, idTag={}",
             connector_id, id_tag
         );
     }
@@ -212,9 +233,10 @@ impl Connection {
             .get("transactionId")
             .and_then(|v| v.as_i64())
             .unwrap_or(0);
-        info!("StopTransaction meta: transactionId={}", transaction_id);
+        info!("StopTransaction 元数据: 交易ID={}", transaction_id);
     }
 
+    /// 对无需云端参与的消息（如 Heartbeat）直接生成 CallResult 响应
     fn handle_immediate(&self, action: &str, unique_id: &str) -> Result<String> {
         match action {
             "Heartbeat" => {
@@ -247,6 +269,7 @@ impl Connection {
         }
     }
 
+    /// 将 OCPP Call 封装为 CloudMessage 用于 Kafka 发布
     pub fn build_cloud_message(&self, call: &Call) -> CloudMessage {
         let input = CloudMessageInput {
             gateway_id: self.gateway_id.clone(),
@@ -264,15 +287,17 @@ impl Connection {
         CloudMessage::new(input, call.payload.clone())
     }
 
+    /// 构造 OCPP CallError 响应 JSON
     pub fn create_call_error(&self, unique_id: &str, error_code: &str, error_desc: &str) -> String {
         let error = CallError::new(unique_id, error_code, error_desc);
         serde_json::to_string(&error)
             .unwrap_or_else(|_| r#"[4,"","GenericError","Error",null]"#.to_string())
     }
 
+    /// 连接断开时从连接管理器中注销
     pub async fn on_disconnect(&mut self) {
         let cp_id = self.current_charge_point_id();
-        info!("Disconnecting charge point: {}", cp_id);
+        info!("充电桩断开连接: {}", cp_id);
         self.connection_manager.remove_connection(&cp_id).await;
     }
 }
