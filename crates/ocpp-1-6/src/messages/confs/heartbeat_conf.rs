@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 /// Heartbeat 的确认结构，包含服务器/设备当前时间字符串
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct HeartbeatConfirmation {
-    /// 当前时间（RFC3339 字符串）
+    /// 中央系统的当前时间，用于充电桩同步内部时钟。当前时间（RFC3339 字符串）
     pub current_time: String,
 }
 
