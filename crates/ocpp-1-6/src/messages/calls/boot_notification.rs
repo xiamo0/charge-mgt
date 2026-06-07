@@ -1,35 +1,51 @@
 //! BootNotification 消息及处理器
+//!
+//! 定义 BootNotification 请求结构、处理器 trait 以及默认实现。BootNotification 用于设备启动时向集线器登记自身信息。
 
 use super::super::confs::boot_notification_conf::BootNotificationConfirmation;
 use serde::{Deserialize, Serialize};
 
+/// BootNotification 请求，包含充电点厂商与型号等可选信息
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BootNotificationRequest {
+    /// 充电点厂商
     pub charge_point_vendor: String,
+    /// 充电点型号
     pub charge_point_model: String,
+    /// 充电盒序列号（可选）
     #[serde(skip_serializing_if = "Option::is_none")]
     pub charge_box_serial_number: Option<String>,
+    /// 充电点序列号（可选）
     #[serde(skip_serializing_if = "Option::is_none")]
     pub charge_point_serial_number: Option<String>,
+    /// 固件版本（可选）
     #[serde(skip_serializing_if = "Option::is_none")]
     pub firmware_version: Option<String>,
+    /// ICCID（可选）
     #[serde(skip_serializing_if = "Option::is_none")]
     pub iccid: Option<String>,
+    /// IMSI（可选）
     #[serde(skip_serializing_if = "Option::is_none")]
     pub imsi: Option<String>,
+    /// 计量表类型（可选）
     #[serde(skip_serializing_if = "Option::is_none")]
     pub meter_type: Option<String>,
+    /// 计量表序列号（可选）
     #[serde(skip_serializing_if = "Option::is_none")]
     pub meter_serial_number: Option<String>,
 }
 
+/// BootNotification 的处理器接口
 pub trait BootNotificationHandler: Send + Sync {
     fn handle(&self, req: BootNotificationRequest) -> BootNotificationConfirmation;
 }
 
+/// BootNotification 的本地配置（响应中的返回状态与间隔）
 #[derive(Debug, Clone)]
 pub struct BootNotificationConfig {
+    /// 启动登记结果状态（Accepted / Pending / Rejected）
     pub status: crate::common::status::RegistrationStatus,
+    /// 如果 Accepted，服务器建议的间隔（秒）
     pub interval_secs: i32,
 }
 
@@ -42,11 +58,13 @@ impl Default for BootNotificationConfig {
     }
 }
 
+/// 默认的 BootNotification 处理器，返回配置中的默认响应
 pub struct DefaultBootNotificationHandler {
     config: BootNotificationConfig,
 }
 
 impl DefaultBootNotificationHandler {
+    /// 使用给定配置创建处理器
     pub fn new(config: BootNotificationConfig) -> Self {
         Self { config }
     }

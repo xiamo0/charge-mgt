@@ -1,14 +1,19 @@
 //! 交易相关类型
+//!
+//! 包含交易上报（transaction）的数据类型和停止原因枚举
 
 use super::meter_value::MeterValue;
 use serde::{Deserialize, Serialize};
 
+/// 交易数据，包含一系列的 MeterValue（电表样本）
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TransactionData {
+    /// 字段名为 transactionData，包含多个 MeterValue
     #[serde(rename = "transactionData")]
     pub transaction_data: Vec<MeterValue>,
 }
 
+/// 停止交易的原因枚举（PascalCase 序列化）
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub enum Reason {

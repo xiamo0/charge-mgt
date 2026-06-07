@@ -2,6 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
+/// 授权状态枚举，用于表示 idTag 授权结果
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub enum AuthorizationStatus {
@@ -12,6 +13,7 @@ pub enum AuthorizationStatus {
     ConcurrentTx,
 }
 
+/// IdTagInfo 包含授权状态与可选的过期时间 / 父 idTag 信息
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct IdTagInfo {
     pub status: AuthorizationStatus,

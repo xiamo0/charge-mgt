@@ -2,6 +2,9 @@
 
 use serde::{Deserialize, Serialize};
 
+/// 充电点/连接器的运行状态
+///
+/// 常见状态包括 Available、Charging、Unavailable 等，用于上报设备当前的可用性与工作阶段。
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub enum ChargePointStatus {
@@ -16,6 +19,9 @@ pub enum ChargePointStatus {
     Faulted,
 }
 
+/// 连接器错误码枚举
+///
+/// 列举了 OCPP 中常见的错误类型，例如 OverCurrentFailure、InternalError 等。
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 #[derive(Default)]
@@ -40,6 +46,7 @@ pub enum ChargePointErrorCode {
     WeakSignal,
 }
 
+/// 更改可用性请求的返回状态
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub enum AvailabilityStatus {
@@ -48,6 +55,7 @@ pub enum AvailabilityStatus {
     Scheduled,
 }
 
+/// 可用性类型（用于 ChangeAvailability 请求），表示目标可用性
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub enum AvailabilityType {
@@ -56,6 +64,7 @@ pub enum AvailabilityType {
     Inoperative,
 }
 
+/// BootNotification 响应中的注册状态
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub enum RegistrationStatus {
@@ -64,6 +73,7 @@ pub enum RegistrationStatus {
     Rejected,
 }
 
+/// 远程启动/停止操作的返回状态
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub enum RemoteStartStopStatus {
@@ -71,6 +81,7 @@ pub enum RemoteStartStopStatus {
     Rejected,
 }
 
+/// DataTransfer 操作的返回状态
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub enum DataTransferStatus {
@@ -79,6 +90,7 @@ pub enum DataTransferStatus {
     UnknownVendorId,
 }
 
+/// 诊断（Diagnostics）流程的状态枚举
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub enum DiagnosticsStatus {
@@ -90,6 +102,7 @@ pub enum DiagnosticsStatus {
     UploadFailed,
 }
 
+/// 固件更新（Firmware）状态枚举
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub enum FirmwareStatus {
@@ -102,6 +115,7 @@ pub enum FirmwareStatus {
     InstallationFailed,
 }
 
+/// ReserveNow / 取消预订 等操作的状态返回枚举
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub enum ReservationStatus {
@@ -112,6 +126,7 @@ pub enum ReservationStatus {
     Unavailable,
 }
 
+/// 取消预订的返回状态
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub enum CancelReservationStatus {
@@ -119,6 +134,7 @@ pub enum CancelReservationStatus {
     Rejected,
 }
 
+/// 固件或配置更新的返回状态
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub enum UpdateStatus {
@@ -128,6 +144,7 @@ pub enum UpdateStatus {
     VersionMismatch,
 }
 
+/// 更新类型（差分/完整）
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub enum UpdateType {
@@ -135,6 +152,7 @@ pub enum UpdateType {
     Full,
 }
 
+/// 设置充电档案操作的返回状态
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub enum ChargingProfileStatus {
@@ -143,6 +161,7 @@ pub enum ChargingProfileStatus {
     NotSupported,
 }
 
+/// 清除充电档案的返回状态
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub enum ClearChargingProfileStatus {
@@ -150,6 +169,7 @@ pub enum ClearChargingProfileStatus {
     Unknown,
 }
 
+/// GetCompositeSchedule 操作的返回状态
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub enum GetCompositeScheduleStatus {
@@ -157,6 +177,7 @@ pub enum GetCompositeScheduleStatus {
     Rejected,
 }
 
+/// TriggerMessage 操作的返回状态
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub enum TriggerMessageStatus {
@@ -165,6 +186,7 @@ pub enum TriggerMessageStatus {
     NotImplemented,
 }
 
+/// UnlockConnector 操作的返回状态
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub enum UnlockStatus {
@@ -173,6 +195,7 @@ pub enum UnlockStatus {
     NotSupported,
 }
 
+/// ClearCache 操作的返回状态
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub enum ClearCacheStatus {
@@ -180,6 +203,7 @@ pub enum ClearCacheStatus {
     Rejected,
 }
 
+/// ChangeConfiguration / SetConfiguration 操作的返回状态
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub enum ConfigurationStatus {
@@ -188,6 +212,7 @@ pub enum ConfigurationStatus {
     RebootRequired,
 }
 
+/// 可被触发的消息类型列表（用于 TriggerMessage 请求）
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub enum MessageTrigger {
@@ -199,6 +224,7 @@ pub enum MessageTrigger {
     StatusNotification,
 }
 
+/// 充电速率单位（W 或 A）
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub enum ChargingRateUnit {
@@ -206,6 +232,7 @@ pub enum ChargingRateUnit {
     A,
 }
 
+/// 充电档案用途枚举（例如用于 tx 或整个充电点）
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub enum ChargingProfilePurpose {
@@ -214,6 +241,7 @@ pub enum ChargingProfilePurpose {
     TxProfile,
 }
 
+/// 充电档案的类型（绝对 / 相对 / 周期性）
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub enum ChargingProfileKind {
@@ -222,6 +250,7 @@ pub enum ChargingProfileKind {
     Recurring,
 }
 
+/// 重复性类型（Daily / Weekly）
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub enum RecurrencyKind {

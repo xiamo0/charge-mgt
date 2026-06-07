@@ -1,27 +1,35 @@
 //! Authorize 消息及处理器
+//!
+//! 定义授权请求（idTag）与处理器接口，默认实现始终返回 Accepted（模拟允许）。
 
 use super::super::confs::authorize_conf::AuthorizeConfirmation;
 use serde::{Deserialize, Serialize};
 
+/// Authorize 请求，包含要进行授权的 idTag
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AuthorizeRequest {
+    /// idTag 字符串，用于识别用户/卡片
     #[serde(rename = "idTag")]
     pub id_tag: String,
 }
 
+/// Authorize 的处理器接口，处理请求并返回确认
 pub trait AuthorizeHandler: Send + Sync {
     fn handle(&self, req: AuthorizeRequest) -> AuthorizeConfirmation;
 }
 
+/// 默认的 Authorize 处理器（简单实现）
 pub struct DefaultAuthorizeHandler;
 
 impl DefaultAuthorizeHandler {
+    /// 创建默认处理器实例
     pub fn new() -> Self {
         Self
     }
 }
 
 impl AuthorizeHandler for DefaultAuthorizeHandler {
+    /// 处理授权请求，默认返回 accepted
     fn handle(&self, _req: AuthorizeRequest) -> AuthorizeConfirmation {
         AuthorizeConfirmation::accepted()
     }

@@ -1,23 +1,31 @@
 //! Heartbeat 消息及处理器
+//! Heartbeat 消息及处理器
+//!
+//! Heartbeat 请求用于让后端获取充电点的当前时间（心跳），此处定义请求类型、处理器 trait 及默认实现。
 
 use super::super::confs::heartbeat_conf::HeartbeatConfirmation;
 use serde::{Deserialize, Serialize};
 
+/// Heartbeat 请求类型（空结构体），序列化为 JSON 空对象
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
 pub struct HeartbeatRequest;
 
 impl HeartbeatRequest {
+    /// 构造一个新的 HeartbeatRequest
     pub fn new() -> Self {
         Self
     }
 }
 
+/// Heartbeat 处理器 trait，处理请求并返回 HeartbeatConfirmation
 pub trait HeartbeatHandler: Send + Sync {
     fn handle(&self, req: HeartbeatRequest) -> HeartbeatConfirmation;
 }
 
+/// 心跳处理相关配置
 #[derive(Debug, Clone)]
 pub struct HeartbeatConfig {
+    /// 心跳间隔（秒），用于控制本地触发心跳的频率
     pub interval_secs: u64,
 }
 
@@ -27,11 +35,13 @@ impl Default for HeartbeatConfig {
     }
 }
 
+/// 默认 Heartbeat 处理器，基于配置返回当前时间
 pub struct DefaultHeartbeatHandler {
     config: HeartbeatConfig,
 }
 
 impl DefaultHeartbeatHandler {
+    /// 创建一个默认处理器实例
     pub fn new(config: HeartbeatConfig) -> Self {
         Self { config }
     }
@@ -44,12 +54,11 @@ impl HeartbeatHandler for DefaultHeartbeatHandler {
 }
 
 impl DefaultHeartbeatHandler {
+    /// 返回配置中的心跳间隔（秒）
     pub fn interval(&self) -> u64 {
         self.config.interval_secs
     }
 }
-
-#[cfg(test)]
 mod tests {
     use super::*;
     use std::sync::Arc;

@@ -1,16 +1,22 @@
 //! Authorize 响应
+//!
+//! 表示 Authorize 请求的确认消息，包含授权状态与可选的 idTagInfo
 
 use crate::common::id_tag::{AuthorizationStatus, IdTagInfo};
 use serde::{Deserialize, Serialize};
 
+/// Authorize 的确认结构
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AuthorizeConfirmation {
+    /// 授权状态（Accepted / Blocked / Expired / Invalid / ConcurrentTx）
     pub status: AuthorizationStatus,
+    /// 可选的 idTagInfo，包含过期时间 / 父 idTag 等信息
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id_tag_info: Option<IdTagInfo>,
 }
 
 impl AuthorizeConfirmation {
+    /// 快速创建一个 Accepted 的 AuthorizeConfirmation（无额外信息）
     pub fn accepted() -> Self {
         Self {
             status: AuthorizationStatus::Accepted,

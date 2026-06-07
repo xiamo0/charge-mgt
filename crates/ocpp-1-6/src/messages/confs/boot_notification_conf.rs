@@ -1,16 +1,23 @@
 //! BootNotification 响应
+//!
+//! BootNotification 的确认消息，包含注册状态、服务器时间以及建议的心跳间隔。
 
 use crate::common::status::RegistrationStatus;
 use serde::{Deserialize, Serialize};
 
+/// BootNotification 确认结构
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BootNotificationConfirmation {
+    /// 注册状态（Accepted / Pending / Rejected）
     pub status: RegistrationStatus,
+    /// 当前时间（RFC3339 字符串）
     pub current_time: String,
+    /// 建议的心跳间隔（秒）
     pub interval: i32,
 }
 
 impl BootNotificationConfirmation {
+    /// 创建一个 Accepted 的确认，携带当前时间与心跳间隔
     pub fn accepted(current_time: &str, interval_secs: i32) -> Self {
         Self {
             status: RegistrationStatus::Accepted,

@@ -5,7 +5,16 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
 use std::fmt;
 
-/// OCPP CALL 消息: [2, "<uniqueId>", "<action>", {payload}]
+/// OCPP CALL 消息类型的封装
+///
+/// 表示从客户端（充电点）或服务器发出的 Call 请求。
+/// 标准 OCPP CALL 的数组格式为: [2, "<uniqueId>", "<action>", {payload}]
+///
+/// 字段说明:
+/// - message_type_id: 固定为 2 表示 CALL
+/// - unique_id: 每条消息的唯一标识（用于匹配响应）
+/// - action: 要调用的操作名称（例如 "Authorize"）
+/// - payload: 任意 JSON 对象，包含该操作的参数
 #[derive(Debug, Clone)]
 pub struct Call {
     pub message_type_id: i32,
@@ -15,6 +24,11 @@ pub struct Call {
 }
 
 impl Call {
+    /// 创建一个新的 Call
+    ///
+    /// `action` - 操作名称
+    /// `unique_id` - 唯一消息 ID（通常为 UUID）
+    /// `payload` - 任意 JSON 载荷
     pub fn new(action: &str, unique_id: &str, payload: Value) -> Self {
         Self {
             message_type_id: 2,
@@ -25,6 +39,10 @@ impl Call {
     }
 }
 
+/// 将 `Call` 序列化为 OCPP 支持的消息格式（默认为数组格式）
+///
+/// 序列化结果为 JSON 数组 [messageTypeId, uniqueId, action, payload]，
+/// 以符合 OCPP 协议的传输格式。
 impl Serialize for Call {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -40,6 +58,8 @@ impl Serialize for Call {
     }
 }
 
+// Visitor 用于从任意 JSON 结构（数组或对象）反序列化为 `Call`。
+// 支持两种输入格式：数组格式 [2, uniqueId, action, payload] 或对象格式 {"2":..., "3":..., ...}
 struct CallVisitor;
 
 impl<'de> Visitor<'de> for CallVisitor {
@@ -158,7 +178,9 @@ impl<'de> Deserialize<'de> for Call {
     }
 }
 
-/// OCPP CALLRESULT 消息: [3, "<uniqueId>", {payload}]
+/// OCPP CallResult 消息类型
+///
+/// 表示对 Call 消息的成功响应，数组格式为: [3, "<uniqueId>", {payload}]
 #[derive(Debug, Clone)]
 pub struct CallResult {
     pub message_type_id: i32,
@@ -167,6 +189,9 @@ pub struct CallResult {
 }
 
 impl CallResult {
+    /// 创建一个新的 CallResult
+    ///
+    /// `unique_id` 必须与对应的 Call 的 uniqueId 一致，以便匹配请求与响应。
     pub fn new(unique_id: &str, payload: Value) -> Self {
         Self {
             message_type_id: 3,
@@ -176,6 +201,7 @@ impl CallResult {
     }
 }
 
+/// 将 `CallResult` 序列化为 OCPP 的数组消息格式 [3, uniqueId, payload]
 impl Serialize for CallResult {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -186,6 +212,8 @@ impl Serialize for CallResult {
     }
 }
 
+// Visitor: 负责把任意 JSON（数组或对象）解析为 CallResult
+// 支持数组格式 [3, uniqueId, payload] 与对象格式 {"3":..., "4":..., "5":...}
 struct CallResultVisitor;
 
 impl<'de> Visitor<'de> for CallResultVisitor {
@@ -288,7 +316,9 @@ impl<'de> Deserialize<'de> for CallResult {
     }
 }
 
-/// OCPP CALLERROR 消息: [4, "<uniqueId>", "<errorCode>", "<errorDescription>", {errorDetails}]
+/// OCPP CallError 消息类型
+///
+/// 表示对 Call 请求的错误响应，格式为: [4, "<uniqueId>", "<errorCode>", "<errorDescription>", {errorDetails}]
 #[derive(Debug, Clone)]
 pub struct CallError {
     pub message_type_id: i32,
@@ -299,6 +329,7 @@ pub struct CallError {
 }
 
 impl CallError {
+    /// 构造一个基本的 CallError（不包含 error_details）
     pub fn new(unique_id: &str, error_code: &str, error_description: &str) -> Self {
         Self {
             message_type_id: 4,
@@ -309,12 +340,14 @@ impl CallError {
         }
     }
 
+    /// 为 CallError 附加详细错误信息（任意 JSON）并返回修改后的实例
     pub fn with_details(mut self, details: Value) -> Self {
         self.error_details = details;
         self
     }
 }
 
+/// 将 `CallError` 序列化为 OCPP 的数组格式 [4, uniqueId, errorCode, errorDescription, errorDetails]
 impl Serialize for CallError {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where

@@ -1,16 +1,22 @@
 //! StartTransaction 响应
+//!
+//! 启动交易后的确认消息，返回 transactionId 与可选的 idTagInfo。
 
 use crate::common::id_tag::IdTagInfo;
 use serde::{Deserialize, Serialize};
 
+/// StartTransaction 的确认结构
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct StartTransactionConfirmation {
+    /// 由后端分配的 transactionId
     pub transaction_id: i32,
+    /// 可选的 idTagInfo（授权结果、过期信息等）
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id_tag_info: Option<IdTagInfo>,
 }
 
 impl StartTransactionConfirmation {
+    /// 创建一个新的 StartTransactionConfirmation（仅 transactionId）
     pub fn new(transaction_id: i32) -> Self {
         Self {
             transaction_id,

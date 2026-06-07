@@ -1,7 +1,10 @@
 //! 授权列表类型
+//!
+//! 包含用于本地授权列表（Local Authorization List）的数据结构与版本枚举
 
 use serde::{Deserialize, Serialize};
 
+/// 本地授权列表的版本类型（Full / Differential）
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub enum AuthorizationVersion {
@@ -9,10 +12,13 @@ pub enum AuthorizationVersion {
     Differential,
 }
 
+/// 列表中的单项，表示一个 idTag 及其可选的 idTag 信息
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AuthorizationList {
+    /// idTag 字符串
     #[serde(rename = "idTag")]
     pub id_tag: String,
+    /// 可选的 idTagInfo，包含授权状态 / 过期时间等
     #[serde(rename = "idTagInfo")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id_tag_info: Option<super::id_tag::IdTagInfo>,
