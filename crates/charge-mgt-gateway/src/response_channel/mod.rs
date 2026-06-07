@@ -7,7 +7,9 @@
 pub mod kafka_impl;
 pub mod redis_impl;
 
-pub use kafka_impl::{KafkaResponseChannel, MessageDirection, PendingRequest, PendingRequestTracker};
+pub use kafka_impl::{
+    KafkaResponseChannel, MessageDirection, PendingRequest, PendingRequestTracker,
+};
 pub use redis_impl::RedisResponseChannel;
 
 use tokio::sync::mpsc;

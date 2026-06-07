@@ -30,19 +30,32 @@ pub fn format_incoming(ev: &IncomingEvent, opts: &WriterOptions) -> String {
     match ev {
         IncomingEvent::Message(msg) => format_message(msg, &ts, opts),
         IncomingEvent::BadEnvelope { raw, error } => {
-            format!("{ts} {} bad envelope: {error}\n  raw: {raw}", opts.paint("✗", |s| s.red()))
+            format!(
+                "{ts} {} bad envelope: {error}\n  raw: {raw}",
+                opts.paint("✗", |s| s.red())
+            )
         }
         IncomingEvent::ConnectionClosed { reason } => {
-            format!("{ts} {} Connection closed: {reason}", opts.paint("🔌", |s| s.dimmed()))
+            format!(
+                "{ts} {} Connection closed: {reason}",
+                opts.paint("🔌", |s| s.dimmed())
+            )
         }
     }
 }
 
 fn format_message(msg: &IncomingMessage, ts: &str, opts: &WriterOptions) -> String {
     match msg {
-        IncomingMessage::CallResult { uid, payload, matched_action, sent_ago } => {
+        IncomingMessage::CallResult {
+            uid,
+            payload,
+            matched_action,
+            sent_ago,
+        } => {
             let action_hint = matched_action.as_deref().unwrap_or("?");
-            let ago_hint = sent_ago.map(format_duration).unwrap_or_else(|| "n/a".into());
+            let ago_hint = sent_ago
+                .map(format_duration)
+                .unwrap_or_else(|| "n/a".into());
             let envelope = serde_json::json!([3, uid, payload]);
             format!(
                 "{ts} {} ({} {ago_hint})\n{}",
@@ -51,9 +64,18 @@ fn format_message(msg: &IncomingMessage, ts: &str, opts: &WriterOptions) -> Stri
                 pretty_envelope(&envelope, opts),
             )
         }
-        IncomingMessage::CallError { uid, code, description, details, matched_action, sent_ago } => {
+        IncomingMessage::CallError {
+            uid,
+            code,
+            description,
+            details,
+            matched_action,
+            sent_ago,
+        } => {
             let action_hint = matched_action.as_deref().unwrap_or("?");
-            let ago_hint = sent_ago.map(format_duration).unwrap_or_else(|| "n/a".into());
+            let ago_hint = sent_ago
+                .map(format_duration)
+                .unwrap_or_else(|| "n/a".into());
             let envelope = serde_json::json!([4, uid, code, description, details]);
             format!(
                 "{ts} {} {} \"{}\" ({} {ago_hint})\n{}",
@@ -64,7 +86,11 @@ fn format_message(msg: &IncomingMessage, ts: &str, opts: &WriterOptions) -> Stri
                 pretty_envelope(&envelope, opts),
             )
         }
-        IncomingMessage::ServerCall { uid, action, payload } => {
+        IncomingMessage::ServerCall {
+            uid,
+            action,
+            payload,
+        } => {
             let envelope = serde_json::json!([2, uid, action, payload]);
             format!(
                 "{ts} {} {} from server\n{}\n  → respond {uid} {{...}}  or  error {uid} <code> <desc>",
@@ -99,6 +125,9 @@ pub fn pretty_envelope(v: &Value, opts: &WriterOptions) -> String {
 
 fn format_duration(d: Duration) -> String {
     let ms = d.as_millis();
-    if ms < 1000 { format!("{ms}ms") }
-    else { format!("{:.2}s", ms as f64 / 1000.0) }
+    if ms < 1000 {
+        format!("{ms}ms")
+    } else {
+        format!("{:.2}s", ms as f64 / 1000.0)
+    }
 }

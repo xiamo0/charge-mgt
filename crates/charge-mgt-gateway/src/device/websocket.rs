@@ -3,13 +3,13 @@
 //! 监听 TCP 端口，接受充电桩 WebSocket 连接，
 //! 读写分离：读任务处理上行消息，写任务发送响应。
 
+use futures_util::{SinkExt, StreamExt};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tokio::sync::mpsc;
 use tokio_tungstenite::accept_async;
 use tracing::{error, info, warn};
-use futures_util::{SinkExt, StreamExt};
 
 use crate::cloud::{ConnectionManager, KafkaProducer};
 use crate::config::DeviceConfig;
@@ -139,11 +139,8 @@ async fn handle_connection(
                         Ok(()) => {}
                         Err(e) => {
                             error!("处理消息失败，来自 {}: {}", peer_addr, e);
-                            let error_response = connection.create_call_error(
-                                "",
-                                "InternalError",
-                                &e.to_string(),
-                            );
+                            let error_response =
+                                connection.create_call_error("", "InternalError", &e.to_string());
                             response_tx.send(error_response).ok();
                         }
                     }

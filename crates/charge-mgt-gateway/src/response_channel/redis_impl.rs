@@ -65,10 +65,7 @@ impl ResponseChannel for RedisResponseChannel {
 
             match result {
                 Ok(Some((_, payload))) => {
-                    info!(
-                        "[REDIS] 收到响应: 键={}, 充电桩={}",
-                        key, charge_point_id
-                    );
+                    info!("[REDIS] 收到响应: 键={}, 充电桩={}", key, charge_point_id);
                     let payload_value: serde_json::Value =
                         serde_json::from_str(&payload).unwrap_or(serde_json::json!({}));
                     let call_result = CallResult::new(&unique_id, payload_value);
@@ -103,11 +100,8 @@ impl ResponseChannel for RedisResponseChannel {
                         "[REDIS] 错误: 键={}, 充电桩={}, 错误={}",
                         key, charge_point_id, e
                     );
-                    let call_error = CallError::new(
-                        &unique_id,
-                        "InternalError",
-                        &format!("Redis error: {}", e),
-                    );
+                    let call_error =
+                        CallError::new(&unique_id, "InternalError", &format!("Redis error: {}", e));
                     let json = serde_json::to_string(&call_error).unwrap_or_default();
                     response_tx.send(json).ok();
                 }

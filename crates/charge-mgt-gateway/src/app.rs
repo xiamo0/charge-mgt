@@ -4,7 +4,9 @@ use crate::cloud::{ConnectionManager, KafkaConsumer, KafkaProducer};
 use crate::config::{Config, ResponseChannelMode};
 use crate::device::websocket::WebSocketServer;
 use crate::error::Result;
-use crate::response_channel::{KafkaResponseChannel, PendingRequestTracker, RedisResponseChannel, ResponseChannel};
+use crate::response_channel::{
+    KafkaResponseChannel, PendingRequestTracker, RedisResponseChannel, ResponseChannel,
+};
 use std::sync::Arc;
 use tracing::info;
 
@@ -28,18 +30,20 @@ impl Application {
         let kafka_producer = Arc::new(KafkaProducer::new(&config.kafka).await?);
         let connection_manager = Arc::new(ConnectionManager::new());
 
-        let (response_channel, pending_tracker): (Arc<dyn ResponseChannel>, Option<Arc<PendingRequestTracker>>) =
-            match config.response_channel {
-                ResponseChannelMode::Redis => {
-                    let redis_channel = RedisResponseChannel::new(&config.redis).await?;
-                    (Arc::new(redis_channel), None)
-                }
-                ResponseChannelMode::Kafka => {
-                    let kafka_channel = KafkaResponseChannel::new(&config.kafka);
-                    let tracker = kafka_channel.pending_tracker();
-                    (kafka_channel, Some(tracker))
-                }
-            };
+        let (response_channel, pending_tracker): (
+            Arc<dyn ResponseChannel>,
+            Option<Arc<PendingRequestTracker>>,
+        ) = match config.response_channel {
+            ResponseChannelMode::Redis => {
+                let redis_channel = RedisResponseChannel::new(&config.redis).await?;
+                (Arc::new(redis_channel), None)
+            }
+            ResponseChannelMode::Kafka => {
+                let kafka_channel = KafkaResponseChannel::new(&config.kafka);
+                let tracker = kafka_channel.pending_tracker();
+                (kafka_channel, Some(tracker))
+            }
+        };
 
         info!(
             "正在启动 charge-mgt-gateway 应用（响应通道={}）",
@@ -72,21 +76,17 @@ impl Application {
         );
 
         let consumer = match (&self.config.response_channel, &self.pending_tracker) {
-            (ResponseChannelMode::Redis, None) => {
-                KafkaConsumer::new_redis_mode(
-                    &self.config.kafka,
-                    &self.config.gateway.id,
-                    self.connection_manager.clone(),
-                )?
-            }
-            (ResponseChannelMode::Kafka, Some(tracker)) => {
-                KafkaConsumer::new_kafka_mode(
-                    &self.config.kafka,
-                    &self.config.gateway.id,
-                    self.connection_manager.clone(),
-                    tracker.clone(),
-                )?
-            }
+            (ResponseChannelMode::Redis, None) => KafkaConsumer::new_redis_mode(
+                &self.config.kafka,
+                &self.config.gateway.id,
+                self.connection_manager.clone(),
+            )?,
+            (ResponseChannelMode::Kafka, Some(tracker)) => KafkaConsumer::new_kafka_mode(
+                &self.config.kafka,
+                &self.config.gateway.id,
+                self.connection_manager.clone(),
+                tracker.clone(),
+            )?,
             _ => {
                 return Err(crate::error::GatewayError::Config(
                     "Invalid response_channel/pending_tracker configuration".to_string(),

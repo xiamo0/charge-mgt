@@ -7,8 +7,8 @@ use serde_json::{json, Value};
 use tokio::net::TcpStream;
 use tokio::sync::{mpsc, Mutex};
 use tokio::time::timeout;
-use tokio_util::sync::CancellationToken;
 use tokio_tungstenite::{connect_async, tungstenite::Message, MaybeTlsStream, WebSocketStream};
+use tokio_util::sync::CancellationToken;
 
 use super::envelope::{self, IncomingEnvelope};
 use super::error::OcppError;
@@ -62,7 +62,9 @@ pub struct OcppClient {
 }
 
 impl OcppClient {
-    pub async fn connect(ws_url: &str) -> Result<(Self, mpsc::UnboundedReceiver<IncomingEvent>), OcppError> {
+    pub async fn connect(
+        ws_url: &str,
+    ) -> Result<(Self, mpsc::UnboundedReceiver<IncomingEvent>), OcppError> {
         let (ws, _response) = connect_async(ws_url)
             .await
             .map_err(|e| OcppError::Connect(e.to_string()))?;
@@ -219,9 +221,14 @@ impl OcppClient {
         let text = serde_json::to_string(&envelope).map_err(|e| OcppError::Parse(e.to_string()))?;
         self.pending_user.lock().await.insert(
             uid.clone(),
-            PendingInfo { action: Some(action.to_string()), at: Instant::now() },
+            PendingInfo {
+                action: Some(action.to_string()),
+                at: Instant::now(),
+            },
         );
-        self.write_tx.send(text).map_err(|_| OcppError::ConnectionClosed)?;
+        self.write_tx
+            .send(text)
+            .map_err(|_| OcppError::ConnectionClosed)?;
         Ok(uid)
     }
 
@@ -230,13 +237,20 @@ impl OcppClient {
             Ok((2, uid, action)) => {
                 self.pending_user.lock().await.insert(
                     uid.clone(),
-                    PendingInfo { action, at: Instant::now() },
+                    PendingInfo {
+                        action,
+                        at: Instant::now(),
+                    },
                 );
-                self.write_tx.send(text.to_string()).map_err(|_| OcppError::ConnectionClosed)?;
+                self.write_tx
+                    .send(text.to_string())
+                    .map_err(|_| OcppError::ConnectionClosed)?;
                 Ok(Some(uid))
             }
             Ok(_) => {
-                self.write_tx.send(text.to_string()).map_err(|_| OcppError::ConnectionClosed)?;
+                self.write_tx
+                    .send(text.to_string())
+                    .map_err(|_| OcppError::ConnectionClosed)?;
                 Ok(None)
             }
             Err(e) => Err(OcppError::Parse(e.to_string())),
@@ -252,7 +266,9 @@ impl OcppClient {
         }
         let envelope = json!([3, uid, payload]);
         let text = serde_json::to_string(&envelope).map_err(|e| OcppError::Parse(e.to_string()))?;
-        self.write_tx.send(text).map_err(|_| OcppError::ConnectionClosed)
+        self.write_tx
+            .send(text)
+            .map_err(|_| OcppError::ConnectionClosed)
     }
 
     pub async fn send_error(
@@ -269,7 +285,9 @@ impl OcppClient {
         }
         let envelope = json!([4, uid, code, description, json!({})]);
         let text = serde_json::to_string(&envelope).map_err(|e| OcppError::Parse(e.to_string()))?;
-        self.write_tx.send(text).map_err(|_| OcppError::ConnectionClosed)
+        self.write_tx
+            .send(text)
+            .map_err(|_| OcppError::ConnectionClosed)
     }
 
     pub async fn pending_server_list(&self) -> Vec<(String, PendingInfo)> {

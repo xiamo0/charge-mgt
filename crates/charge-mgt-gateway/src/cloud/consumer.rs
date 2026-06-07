@@ -3,18 +3,18 @@
 //! - `ConnectionManager`：维护在线充电桩连接，支持下行消息推送
 //! - `KafkaConsumer`：订阅云端下行消息，转换为 OCPP 格式回传充电桩
 
+use futures_util::StreamExt;
 use rdkafka::consumer::{Consumer, StreamConsumer};
 use rdkafka::message::Message;
 use rdkafka::ClientConfig;
 use std::sync::Arc;
-use futures_util::StreamExt;
 use tokio::sync::{mpsc, RwLock};
 use tracing::{error, info, warn};
 
 use crate::cloud::message::CloudMessage;
 use crate::config::KafkaConfig;
 use crate::error::{GatewayError, Result};
-use crate::response_channel::{PendingRequestTracker, MessageDirection};
+use crate::response_channel::{MessageDirection, PendingRequestTracker};
 
 use ocpp_1_6::envelope::{Call, CallError, CallResult};
 
@@ -85,10 +85,7 @@ impl ConnectionManager {
                     info!("消息已发送至充电桩 {}", charge_point_id);
                     true
                 } else {
-                    warn!(
-                        "发送至充电桩 {} 失败（通道已关闭）",
-                        charge_point_id
-                    );
+                    warn!("发送至充电桩 {} 失败（通道已关闭）", charge_point_id);
                     false
                 }
             }
@@ -139,7 +136,8 @@ impl KafkaConsumer {
             .create()
             .map_err(|e| GatewayError::Kafka(format!("Failed to create consumer: {}", e)))?;
 
-        let cmd_topic = CloudMessage::cmd_topic(&config.topic_prefix, &config.cmd_topic_suffix, gateway_id);
+        let cmd_topic =
+            CloudMessage::cmd_topic(&config.topic_prefix, &config.cmd_topic_suffix, gateway_id);
         consumer
             .subscribe(&[&cmd_topic])
             .map_err(|e| GatewayError::Kafka(format!("Failed to subscribe: {}", e)))?;
@@ -173,7 +171,8 @@ impl KafkaConsumer {
             .create()
             .map_err(|e| GatewayError::Kafka(format!("Failed to create consumer: {}", e)))?;
 
-        let resp_topic = CloudMessage::resp_topic(&config.topic_prefix, &config.resp_topic_suffix, gateway_id);
+        let resp_topic =
+            CloudMessage::resp_topic(&config.topic_prefix, &config.resp_topic_suffix, gateway_id);
         consumer
             .subscribe(&[&resp_topic])
             .map_err(|e| GatewayError::Kafka(format!("Failed to subscribe: {}", e)))?;
@@ -240,7 +239,9 @@ impl KafkaConsumer {
         let tracker = match &self.pending_tracker {
             Some(t) => t,
             None => {
-                warn!("收到 CallResult 但无待响应跟踪器（Redis 模式不应通过 Kafka 接收 CallResult）");
+                warn!(
+                    "收到 CallResult 但无待响应跟踪器（Redis 模式不应通过 Kafka 接收 CallResult）"
+                );
                 self.connection_manager
                     .send_to_charge_point(
                         charge_point_id,
@@ -285,7 +286,9 @@ impl KafkaConsumer {
                     msg.error_code.as_deref().unwrap_or("InternalError"),
                     msg.error_description.as_deref().unwrap_or("Unknown error"),
                 );
-                self.connection_manager.send_to_charge_point(charge_point_id, error_json).await;
+                self.connection_manager
+                    .send_to_charge_point(charge_point_id, error_json)
+                    .await;
                 return;
             }
         };
@@ -310,7 +313,9 @@ impl KafkaConsumer {
                     msg.error_code.as_deref().unwrap_or("InternalError"),
                     msg.error_description.as_deref().unwrap_or("Unknown error"),
                 );
-                self.connection_manager.send_to_charge_point(charge_point_id, error_json).await;
+                self.connection_manager
+                    .send_to_charge_point(charge_point_id, error_json)
+                    .await;
             }
         }
     }
@@ -319,9 +324,16 @@ impl KafkaConsumer {
     async fn handle_call(&self, msg: &CloudMessage, charge_point_id: &str) {
         let call_json = build_ocpp_call(&msg.action, &msg.unique_id, msg.payload.clone());
 
-        if self.connection_manager.send_to_charge_point(charge_point_id, call_json).await {
+        if self
+            .connection_manager
+            .send_to_charge_point(charge_point_id, call_json)
+            .await
+        {
             if let Some(tracker) = &self.pending_tracker {
-                let meta = self.connection_manager.get_connection_info(charge_point_id).await;
+                let meta = self
+                    .connection_manager
+                    .get_connection_info(charge_point_id)
+                    .await;
                 if let Some(meta) = meta {
                     tracker
                         .register(crate::response_channel::PendingRequest {

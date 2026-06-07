@@ -76,10 +76,7 @@ pub struct MockKafkaProducer {
 impl MockKafkaProducer {
     /// 创建模拟生产者
     pub fn new(config: &KafkaConfig) -> Self {
-        info!(
-            "模拟 Kafka 生产者已创建，前缀: {}",
-            config.topic_prefix
-        );
+        info!("模拟 Kafka 生产者已创建，前缀: {}", config.topic_prefix);
         Self {
             topic_prefix: config.topic_prefix.clone(),
             req_topic_suffix: config.req_topic_suffix.clone(),

@@ -10,40 +10,59 @@ pub enum ReplCommand {
     History,
     Last,
     LastSent,
-    Replay { index: usize },
-    HeartbeatOn { interval_secs: u64 },
+    Replay {
+        index: usize,
+    },
+    HeartbeatOn {
+        interval_secs: u64,
+    },
     HeartbeatOff,
-    SendRaw { envelope_text: String },
-    SendCall { action: String, payload: Value, uid: Option<String> },
-    Respond { uid: String, payload: Value },
-    SendError { uid: String, code: String, description: String },
-    Unknown { first_token: String },
+    SendRaw {
+        envelope_text: String,
+    },
+    SendCall {
+        action: String,
+        payload: Value,
+        uid: Option<String>,
+    },
+    Respond {
+        uid: String,
+        payload: Value,
+    },
+    SendError {
+        uid: String,
+        code: String,
+        description: String,
+    },
+    Unknown {
+        first_token: String,
+    },
 }
 
 pub const COMMAND_TABLE: &[(&str, &str)] = &[
-    ("help",          "show help"),
-    ("?",             "show help"),
-    ("quit",          "close connection and exit"),
-    ("exit",          "close connection and exit"),
-    ("status",        "show connection & pending state"),
-    ("st",            "status (shortcut)"),
-    ("clear",         "clear screen"),
-    ("history",       "list past user inputs"),
-    ("h",             "history (shortcut)"),
-    ("last",          "print last received message"),
-    ("l",             "last (shortcut)"),
-    ("last-sent",     "print last sent message"),
-    ("ls",            "last-sent (shortcut)"),
-    ("replay",        "replay history item by index"),
-    ("raw",           "send raw envelope JSON verbatim"),
-    ("respond",       "reply to server call with CallResult"),
-    ("r",             "respond (shortcut)"),
-    ("error",         "reply to server call with CallError"),
-    ("e",             "error (shortcut)"),
-    ("heartbeat-on",  "start auto-heartbeat task"),
-    ("hb",            "heartbeat-on (shortcut)"),
+    ("help", "show help"),
+    ("?", "show help"),
+    ("quit", "close connection and exit"),
+    ("exit", "close connection and exit"),
+    ("status", "show connection & pending state"),
+    ("st", "status (shortcut)"),
+    ("clear", "clear screen"),
+    ("history", "list past user inputs"),
+    ("h", "history (shortcut)"),
+    ("last", "print last received message"),
+    ("l", "last (shortcut)"),
+    ("last-sent", "print last sent message"),
+    ("ls", "last-sent (shortcut)"),
+    ("replay", "replay history item by index"),
+    ("raw", "send raw envelope JSON verbatim"),
+    ("respond", "reply to server call with CallResult"),
+    ("r", "respond (shortcut)"),
+    ("error", "reply to server call with CallError"),
+    ("e", "error (shortcut)"),
+    ("heartbeat-on", "start auto-heartbeat task"),
+    ("hb", "heartbeat-on (shortcut)"),
     ("heartbeat-off", "stop auto-heartbeat task"),
-    ("hbo",           "heartbeat-off (shortcut)"),
+    ("hbo", "heartbeat-off (shortcut)"),
 ];
 
 pub fn parse(line: &str) -> Option<ReplCommand> {
@@ -60,12 +79,16 @@ pub fn parse(line: &str) -> Option<ReplCommand> {
         }
         // 其他 slash 命令当未知处理
         let first = rest.split_whitespace().next().unwrap_or("").to_string();
-        return Some(ReplCommand::Unknown { first_token: format!("/{first}") });
+        return Some(ReplCommand::Unknown {
+            first_token: format!("/{first}"),
+        });
     }
 
     // raw JSON envelope
     if trimmed.starts_with('[') || trimmed.starts_with('{') {
-        return Some(ReplCommand::SendRaw { envelope_text: trimmed.to_string() });
+        return Some(ReplCommand::SendRaw {
+            envelope_text: trimmed.to_string(),
+        });
     }
 
     // tokenized command
@@ -101,11 +124,15 @@ fn parse_uid_command(rest: &str) -> Option<ReplCommand> {
     // 格式: <uid> <action> [payload]
     let (uid, rest) = trim_split_first_ws(rest);
     if uid.is_empty() {
-        return Some(ReplCommand::Unknown { first_token: "/uid".to_string() });
+        return Some(ReplCommand::Unknown {
+            first_token: "/uid".to_string(),
+        });
     }
     let (action, rest) = trim_split_first_ws(rest);
     if action.is_empty() {
-        return Some(ReplCommand::Unknown { first_token: "/uid".to_string() });
+        return Some(ReplCommand::Unknown {
+            first_token: "/uid".to_string(),
+        });
     }
     let payload = parse_optional_json(rest).unwrap_or(Value::Object(serde_json::Map::new()));
     Some(ReplCommand::SendCall {
@@ -119,25 +146,36 @@ fn parse_replay(rest: &str) -> Option<ReplCommand> {
     let rest = rest.trim();
     match rest.parse::<usize>() {
         Ok(i) if i >= 1 => Some(ReplCommand::Replay { index: i }),
-        _ => Some(ReplCommand::Unknown { first_token: "replay".to_string() }),
+        _ => Some(ReplCommand::Unknown {
+            first_token: "replay".to_string(),
+        }),
     }
 }
 
 fn parse_raw(rest: &str) -> Option<ReplCommand> {
     let rest = rest.trim();
     if rest.is_empty() {
-        return Some(ReplCommand::Unknown { first_token: "raw".to_string() });
+        return Some(ReplCommand::Unknown {
+            first_token: "raw".to_string(),
+        });
     }
-    Some(ReplCommand::SendRaw { envelope_text: rest.to_string() })
+    Some(ReplCommand::SendRaw {
+        envelope_text: rest.to_string(),
+    })
 }
 
 fn parse_respond(rest: &str) -> Option<ReplCommand> {
     let (uid, rest) = trim_split_first_ws(rest);
     if uid.is_empty() {
-        return Some(ReplCommand::Unknown { first_token: "respond".to_string() });
+        return Some(ReplCommand::Unknown {
+            first_token: "respond".to_string(),
+        });
     }
     let payload = parse_optional_json(rest).unwrap_or(Value::Object(serde_json::Map::new()));
-    Some(ReplCommand::Respond { uid: uid.to_string(), payload })
+    Some(ReplCommand::Respond {
+        uid: uid.to_string(),
+        payload,
+    })
 }
 
 fn parse_error(rest: &str) -> Option<ReplCommand> {
@@ -146,7 +184,9 @@ fn parse_error(rest: &str) -> Option<ReplCommand> {
     let (code, rest) = trim_split_first_ws(rest);
     let description = rest.trim();
     if uid.is_empty() || code.is_empty() || description.is_empty() {
-        return Some(ReplCommand::Unknown { first_token: "error".to_string() });
+        return Some(ReplCommand::Unknown {
+            first_token: "error".to_string(),
+        });
     }
     Some(ReplCommand::SendError {
         uid: uid.to_string(),
@@ -159,13 +199,19 @@ fn parse_heartbeat_on(rest: &str) -> Option<ReplCommand> {
     let rest = rest.trim();
     match rest.parse::<u64>() {
         Ok(s) if s > 0 => Some(ReplCommand::HeartbeatOn { interval_secs: s }),
-        _ => Some(ReplCommand::Unknown { first_token: "heartbeat-on".to_string() }),
+        _ => Some(ReplCommand::Unknown {
+            first_token: "heartbeat-on".to_string(),
+        }),
     }
 }
 
 fn parse_shorthand_call(action: String, rest: &str) -> Option<ReplCommand> {
     let payload = parse_optional_json(rest).unwrap_or(Value::Object(serde_json::Map::new()));
-    Some(ReplCommand::SendCall { action, payload, uid: None })
+    Some(ReplCommand::SendCall {
+        action,
+        payload,
+        uid: None,
+    })
 }
 
 fn parse_optional_json(text: &str) -> Option<Value> {
@@ -179,7 +225,10 @@ fn parse_optional_json(text: &str) -> Option<Value> {
 fn looks_like_action(s: &str) -> bool {
     // OCPP 动作名是 PascalCase（首字母大写），与 REPL 命令（全小写）形成正交命名空间
     !s.is_empty()
-        && s.chars().next().map(|c| c.is_ascii_uppercase()).unwrap_or(false)
+        && s.chars()
+            .next()
+            .map(|c| c.is_ascii_uppercase())
+            .unwrap_or(false)
         && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
 }
 

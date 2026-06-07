@@ -77,10 +77,7 @@ impl PendingRequestTracker {
     }
 
     /// 充电桩断开时清理其所有待响应请求
-    pub async fn remove_by_charge_point(
-        &self,
-        charge_point_id: &str,
-    ) -> Vec<PendingRequest> {
+    pub async fn remove_by_charge_point(&self, charge_point_id: &str) -> Vec<PendingRequest> {
         let mut pending = self.pending.write().await;
         let keys_to_remove: Vec<String> = pending
             .values()

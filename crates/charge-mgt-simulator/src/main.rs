@@ -44,7 +44,10 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let (client, event_rx) = match OcppClient::connect(&ws_url).await {
         Ok(v) => v,
         Err(e) => {
-            eprintln!("{} connection failed: {e}", writer_opts.paint("✗", |s| s.red()));
+            eprintln!(
+                "{} connection failed: {e}",
+                writer_opts.paint("✗", |s| s.red())
+            );
             return Err(e.into());
         }
     };
@@ -146,14 +149,19 @@ fn raw_event_text(ev: &IncomingEvent) -> String {
             IncomingMessage::CallResult { uid, payload, .. } => {
                 serde_json::to_string(&json!([3, uid, payload])).unwrap_or_default()
             }
-            IncomingMessage::CallError { uid, code, description, details, .. } => {
-                serde_json::to_string(&json!([4, uid, code, description, details]))
-                    .unwrap_or_default()
-            }
-            IncomingMessage::ServerCall { uid, action, payload } => {
-                serde_json::to_string(&json!([2, uid, action, payload]))
-                    .unwrap_or_default()
-            }
+            IncomingMessage::CallError {
+                uid,
+                code,
+                description,
+                details,
+                ..
+            } => serde_json::to_string(&json!([4, uid, code, description, details]))
+                .unwrap_or_default(),
+            IncomingMessage::ServerCall {
+                uid,
+                action,
+                payload,
+            } => serde_json::to_string(&json!([2, uid, action, payload])).unwrap_or_default(),
         },
         IncomingEvent::BadEnvelope { raw, .. } => raw.clone(),
         IncomingEvent::ConnectionClosed { reason } => format!("__closed__: {reason}"),
@@ -206,26 +214,31 @@ async fn handle_command(
             let _sent_idx = log.record_sent(envelope_text.clone());
             match client.send_raw(&envelope_text).await {
                 Ok(maybe_uid) => {
-                    println!("{}", writer::format_sent(&envelope_text, maybe_uid.as_deref(), opts));
+                    println!(
+                        "{}",
+                        writer::format_sent(&envelope_text, maybe_uid.as_deref(), opts)
+                    );
                 }
                 Err(e) => {
                     println!("{} send failed: {e}", opts.paint("✗", |s| s.red()));
                 }
             }
         }
-        ReplCommand::SendCall { action, payload, uid } => {
-            match client.send_call(&action, payload.clone(), uid).await {
-                Ok(used_uid) => {
-                    let envelope = json!([2, &used_uid, &action, &payload]);
-                    let text = serde_json::to_string(&envelope).unwrap_or_default();
-                    let _ = log.record_sent(text.clone());
-                    println!("{}", writer::format_sent(&text, Some(&used_uid), opts));
-                }
-                Err(e) => {
-                    println!("{} send failed: {e}", opts.paint("✗", |s| s.red()));
-                }
+        ReplCommand::SendCall {
+            action,
+            payload,
+            uid,
+        } => match client.send_call(&action, payload.clone(), uid).await {
+            Ok(used_uid) => {
+                let envelope = json!([2, &used_uid, &action, &payload]);
+                let text = serde_json::to_string(&envelope).unwrap_or_default();
+                let _ = log.record_sent(text.clone());
+                println!("{}", writer::format_sent(&text, Some(&used_uid), opts));
             }
-        }
+            Err(e) => {
+                println!("{} send failed: {e}", opts.paint("✗", |s| s.red()));
+            }
+        },
         ReplCommand::Respond { uid, payload } => {
             match client.respond(&uid, payload.clone()).await {
                 Ok(()) => {
@@ -239,19 +252,21 @@ async fn handle_command(
                 }
             }
         }
-        ReplCommand::SendError { uid, code, description } => {
-            match client.send_error(&uid, &code, &description).await {
-                Ok(()) => {
-                    let envelope = json!([4, &uid, &code, &description, json!({})]);
-                    let text = serde_json::to_string(&envelope).unwrap_or_default();
-                    let _ = log.record_sent(text.clone());
-                    println!("{}", writer::format_sent(&text, Some(&uid), opts));
-                }
-                Err(e) => {
-                    println!("{} error send failed: {e}", opts.paint("✗", |s| s.red()));
-                }
+        ReplCommand::SendError {
+            uid,
+            code,
+            description,
+        } => match client.send_error(&uid, &code, &description).await {
+            Ok(()) => {
+                let envelope = json!([4, &uid, &code, &description, json!({})]);
+                let text = serde_json::to_string(&envelope).unwrap_or_default();
+                let _ = log.record_sent(text.clone());
+                println!("{}", writer::format_sent(&text, Some(&uid), opts));
             }
-        }
+            Err(e) => {
+                println!("{} error send failed: {e}", opts.paint("✗", |s| s.red()));
+            }
+        },
         ReplCommand::Unknown { first_token } => print_unknown(&first_token, opts),
     }
 }
@@ -317,7 +332,10 @@ async fn replay(client: &OcppClient, opts: &WriterOptions, log: &mut Log, index:
             match client.send_raw(&envelope).await {
                 Ok(maybe_uid) => {
                     println!("{} replay #{}", opts.paint("↻", |s| s.cyan()), index);
-                    println!("{}", writer::format_sent(&envelope, maybe_uid.as_deref(), opts));
+                    println!(
+                        "{}",
+                        writer::format_sent(&envelope, maybe_uid.as_deref(), opts)
+                    );
                 }
                 Err(err) => {
                     println!("{} replay failed: {err}", opts.paint("✗", |s| s.red()));

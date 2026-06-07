@@ -9,7 +9,9 @@ use std::sync::Arc;
 use tokio::sync::mpsc;
 use tracing::{error, info, warn};
 
-use crate::cloud::{CloudMessage, CloudMessageInput, ConnectionManager, ConnectionMeta, KafkaProducer};
+use crate::cloud::{
+    CloudMessage, CloudMessageInput, ConnectionManager, ConnectionMeta, KafkaProducer,
+};
 use crate::error::{GatewayError, Result};
 use crate::response_channel::ResponseChannel;
 
@@ -89,11 +91,7 @@ impl Connection {
         let call: Call = match serde_json::from_str(text) {
             Ok(c) => c,
             Err(e) => {
-                warn!(
-                    "OCPP Call 消息解析失败: 长度={}, 错误={}",
-                    text.len(),
-                    e
-                );
+                warn!("OCPP Call 消息解析失败: 长度={}, 错误={}", text.len(), e);
                 return Err(GatewayError::Codec(format!("Invalid OCPP message: {}", e)));
             }
         };
@@ -126,10 +124,7 @@ impl Connection {
         let cp_id = self.current_charge_point_id();
 
         if requires_cloud_response(action) {
-            info!(
-                "待响应请求已分发: 动作={}, uniqueId={}",
-                action, unique_id
-            );
+            info!("待响应请求已分发: 动作={}, uniqueId={}", action, unique_id);
 
             self.response_channel.dispatch_pending_request(
                 unique_id,

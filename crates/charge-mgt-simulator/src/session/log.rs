@@ -37,7 +37,11 @@ impl Log {
         self.next_index += 1;
         Self::push(
             &mut self.sent,
-            HistoryEntry { index: idx, at: SystemTime::now(), text },
+            HistoryEntry {
+                index: idx,
+                at: SystemTime::now(),
+                text,
+            },
             self.capacity,
         );
         idx
@@ -48,7 +52,11 @@ impl Log {
         self.next_index += 1;
         Self::push(
             &mut self.recv,
-            HistoryEntry { index: idx, at: SystemTime::now(), text },
+            HistoryEntry {
+                index: idx,
+                at: SystemTime::now(),
+                text,
+            },
             self.capacity,
         );
     }
