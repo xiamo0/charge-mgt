@@ -5,6 +5,10 @@ edition.workspace = true
 license.workspace = true
 authors.workspace = true
 
+[[bin]]
+name = "charge_mgt_cloud"
+path = "src/main.rs"
+
 [dependencies]
 tokio = { workspace = true }
 serde = { workspace = true }
@@ -12,11 +16,32 @@ serde_json.workspace = true
 axum.workspace = true
 thiserror = { workspace = true }
 tracing = { workspace = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 chrono = { workspace = true }
 
+# OCPP 消息结构（复用）
 ocpp_1_6 = { path = "../ocpp-1-6" }
-ocpp_2_0_1 = { path = "../ocpp-2-0-1" }
-ocpp_2_1 = { path = "../ocpp-2-1" }
+
+# 数据库（PG + migrations）
+sqlx = { version = "0.7", default-features = false, features = [
+    "runtime-tokio-native-tls",
+    "postgres",
+    "chrono",
+    "uuid",
+    "json",
+    "migrate",
+    "macros"
+] }
+
+# Kafka（复用 gateway 的版本，保证消息体互操作）
+rdkafka = { version = "0.36", features = ["cmake-build"] }
+futures = { version = "0.3", default-features = false, features = ["std"] }
+
+# 配置加载
+config = "0.14"
+
+# 错误处理（anyhow for application-level errors; thiserror for typed errors）
+anyhow = "1"
 
 [dev-dependencies]
 tokio = { workspace = true }

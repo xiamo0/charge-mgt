@@ -1,0 +1,17 @@
+cloud:
+  id: "cloud-001"
+  http_listen_addr: "0.0.0.0"
+  http_listen_port: 8000
+
+database:
+  url: "postgres://charge_mgt:charge_mgt_dev@127.0.0.1:5432/charge_mgt_cloud"
+  max_connections: 10
+
+kafka:
+  brokers: "127.0.0.1:9092"
+  consumer_group: "charge-mgt-cloud-consumer"
+  topic_prefix: "charge_mgt"
+  req_topics:
+    - "charge_mgt.req.Alphas"
+    - "charge_mgt.req.Beta"
+    - "charge_mgt.req.SimVendor"

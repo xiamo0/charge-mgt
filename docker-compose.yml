@@ -36,6 +36,32 @@ services:
     networks:
       - kafka-network
 
+  # PostgreSQL 数据库 (charge-mgt-cloud 持久层)
+  postgres:
+    image: postgres:15
+    container_name: charge-mgt-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: charge_mgt
+      POSTGRES_PASSWORD: charge_mgt_dev
+      POSTGRES_DB: charge_mgt_cloud
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - charge-mgt-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U charge_mgt -d charge_mgt_cloud"]
+      interval: 5s
+      retries: 10
+    networks:
+      - charge-mgt-network
+
+volumes:
+  charge-mgt-postgres-data:
+    driver: local
+
 networks:
   kafka-network:
+    driver: bridge
+  charge-mgt-network:
     driver: bridge
