@@ -186,7 +186,6 @@ name = "charge_mgt_cloud"
 version = "0.1.0"
 dependencies = [
  "axum",
- "charge_mgt_common",
  "chrono",
  "ocpp_1_6",
  "ocpp_2_0_1",
@@ -199,22 +198,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "charge_mgt_common"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
-]
-
-[[package]]
 name = "charge_mgt_gateway"
 version = "0.1.0"
 dependencies = [
- "charge_mgt_common",
  "chrono",
  "config",
  "futures-util",

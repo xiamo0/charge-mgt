@@ -19,10 +19,6 @@
 ## 二、Crate 依赖关系
 
 ```
-charge-mgt-common ──────────────────► charge-mgt-cloud
-                                      charge-mgt-gateway
-                                      charge-mgt-simulator
-
 ocpp-1-6 ───────────────────────────► charge-mgt-cloud
                                       charge-mgt-gateway
                                       charge-mgt-simulator
@@ -32,6 +28,8 @@ ocpp-2-0-1 ───────────────────────
 
 ocpp-2-1 ────────────────────────────► charge-mgt-gateway
 ```
+
+> **注**：原 `charge-mgt-common` 公共基础设施 crate 已于 v0.2 删除（之前为 16 行空壳，零使用零价值）。如果未来需要 2+ crate 共享同一段逻辑，可随时重建（约 5-10 分钟）。
 
 ---
 
@@ -78,18 +76,6 @@ charge-mgt/
 │   │   │   │   └── confs/
 │   │   │   ├── profiles/
 │   │   │   └── serialization/
-│   │   └── Cargo.toml
-│   │
-│   ├── charge-mgt-common/         # 公共基础设施
-│   │   ├── src/
-│   │   │   ├── lib.rs
-│   │   │   ├── config.rs
-│   │   │   ├── error.rs
-│   │   │   ├── id.rs
-│   │   │   ├── tracing.rs
-│   │   │   ├── db/
-│   │   │   ├── mq/
-│   │   │   └── utils/
 │   │   └── Cargo.toml
 │   │
 │   ├── charge-mgt-cloud/          # 云平台 (CSMS)
@@ -237,8 +223,7 @@ charge-mgt/
 ## 五、实现顺序
 
 1. ocpp-1-6 (核心协议)
-2. charge-mgt-common (基础设施)
-3. ocpp-2-0-1 (协议)
+2. ocpp-2-0-1 (协议)
 4. charge-mgt-cloud (云平台)
 5. charge-mgt-simulator (模拟器)
 6. charge-mgt-gateway (网关)

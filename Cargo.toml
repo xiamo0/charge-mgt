@@ -4,7 +4,6 @@ members = [
     "crates/ocpp-1-6",
     "crates/ocpp-2-0-1",
     "crates/ocpp-2-1",
-    "crates/charge-mgt-common",
     "crates/charge-mgt-cloud",
     "crates/charge-mgt-gateway",
     "crates/charge-mgt-simulator",

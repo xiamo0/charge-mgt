@@ -17,7 +17,6 @@ chrono = { workspace = true }
 ocpp_1_6 = { path = "../ocpp-1-6" }
 ocpp_2_0_1 = { path = "../ocpp-2-0-1" }
 ocpp_2_1 = { path = "../ocpp-2-1" }
-charge_mgt_common = { path = "../charge-mgt-common" }
 
 [dev-dependencies]
 tokio = { workspace = true }
