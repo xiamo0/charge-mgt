@@ -92,7 +92,7 @@ impl Connection {
             Ok(c) => c,
             Err(e) => {
                 warn!("OCPP Call 消息解析失败: 长度={}, 错误={}", text.len(), e);
-                return Err(GatewayError::Codec(format!("Invalid OCPP message: {}", e)));
+                return Err(GatewayError::Codec(format!("无效的 OCPP 消息: {}", e)));
             }
         };
 
@@ -256,7 +256,7 @@ impl Connection {
                 let call_error = CallError::new(
                     unique_id,
                     "NotImplemented",
-                    &format!("Action {} not supported", action),
+                    &format!("不支持的操作: {}", action),
                 );
                 Ok(serde_json::to_string(&call_error)
                     .map_err(|e| GatewayError::Codec(e.to_string()))?)

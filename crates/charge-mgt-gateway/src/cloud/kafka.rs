@@ -29,7 +29,7 @@ impl KafkaProducer {
             .set("queue.buffering.max.ms", "100")
             .set("acks", "1")
             .create()
-            .map_err(|e| GatewayError::Kafka(format!("Failed to create producer: {}", e)))?;
+            .map_err(|e| GatewayError::Kafka(format!("创建生产者失败: {}", e)))?;
 
         info!("Kafka 生产者已连接: {}", config.brokers);
         Ok(Self {
@@ -43,7 +43,7 @@ impl KafkaProducer {
     pub async fn send(&self, msg: &CloudMessage) -> Result<()> {
         let topic = msg.req_topic(&self.topic_prefix, &self.req_topic_suffix);
         let payload = serde_json::to_string(msg)
-            .map_err(|e| GatewayError::Codec(format!("Failed to serialize message: {}", e)))?;
+            .map_err(|e| GatewayError::Codec(format!("消息序列化失败: {}", e)))?;
 
         let record = rdkafka::producer::FutureRecord::to(&topic)
             .payload(&payload)
@@ -54,7 +54,7 @@ impl KafkaProducer {
             .await
             .map_err(|(e, _)| {
                 error!("Kafka 消息发送失败: {}", e);
-                GatewayError::Kafka(format!("Send failed: {}", e))
+                GatewayError::Kafka(format!("发送失败: {}", e))
             })?;
 
         info!(
@@ -87,7 +87,7 @@ impl MockKafkaProducer {
     pub async fn send(&self, msg: &CloudMessage) -> Result<()> {
         let topic = msg.req_topic(&self.topic_prefix, &self.req_topic_suffix);
         let payload = serde_json::to_string(msg)
-            .map_err(|e| GatewayError::Codec(format!("Failed to serialize: {}", e)))?;
+            .map_err(|e| GatewayError::Codec(format!("消息序列化失败: {}", e)))?;
 
         info!(
             "[MOCK] 模拟发送 Kafka 消息，主题={}, 载荷长度={}",

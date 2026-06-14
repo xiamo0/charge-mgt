@@ -89,7 +89,7 @@ impl Application {
             )?,
             _ => {
                 return Err(crate::error::GatewayError::Config(
-                    "Invalid response_channel/pending_tracker configuration".to_string(),
+                    "无效的 response_channel/pending_tracker 配置".to_string(),
                 ));
             }
         };

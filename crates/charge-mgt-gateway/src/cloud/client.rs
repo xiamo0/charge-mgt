@@ -37,7 +37,7 @@ impl CloudApiClient {
         let client = Client::builder()
             .timeout(std::time::Duration::from_secs(30))
             .build()
-            .map_err(|e| GatewayError::CloudApi(format!("Failed to create HTTP client: {}", e)))?;
+            .map_err(|e| GatewayError::CloudApi(format!("创建 HTTP 客户端失败: {}", e)))?;
 
         info!("云端 API 客户端已创建，地址: {}", config.api_url);
 
@@ -70,7 +70,7 @@ impl CloudApiClient {
             })
             .send()
             .await
-            .map_err(|e| GatewayError::CloudApi(format!("HTTP request failed: {}", e)))?;
+            .map_err(|e| GatewayError::CloudApi(format!("HTTP 请求失败: {}", e)))?;
 
         if response.status().is_success() {
             info!("设备注册成功: {}", device_id);
@@ -79,7 +79,7 @@ impl CloudApiClient {
             let status = response.status();
             error!("设备注册失败: {} - {}", device_id, status);
             Err(GatewayError::CloudApi(format!(
-                "Registration failed: {}",
+                "设备注册失败: {}",
                 status
             )))
         }
@@ -95,13 +95,13 @@ impl CloudApiClient {
             .header("Authorization", format!("Bearer {}", self.api_key))
             .send()
             .await
-            .map_err(|e| GatewayError::CloudApi(format!("HTTP request failed: {}", e)))?;
+            .map_err(|e| GatewayError::CloudApi(format!("HTTP 请求失败: {}", e)))?;
 
         if response.status().is_success() {
             Ok(())
         } else {
             Err(GatewayError::CloudApi(format!(
-                "Heartbeat failed: {}",
+                "心跳发送失败: {}",
                 response.status()
             )))
         }

@@ -57,12 +57,12 @@ impl WebSocketServer {
         let addr = format!("{}:{}", self.config.listen_addr, self.config.listen_port);
         let addr: SocketAddr = addr
             .parse()
-            .map_err(|e| GatewayError::Config(format!("Invalid address: {}", e)))?;
+            .map_err(|e| GatewayError::Config(format!("无效地址: {}", e)))?;
 
         info!("WebSocket 服务正在启动，地址: {}", addr);
         let listener = TcpListener::bind(&addr)
             .await
-            .map_err(|e| GatewayError::WebSocket(format!("Failed to bind: {}", e)))?;
+            .map_err(|e| GatewayError::WebSocket(format!("绑定失败: {}", e)))?;
 
         info!("WebSocket 服务已监听: {}", addr);
 

@@ -134,13 +134,13 @@ impl KafkaConsumer {
             .set("session.timeout.ms", "10000")
             .set("socket.connection.setup.timeout.ms", "5000")
             .create()
-            .map_err(|e| GatewayError::Kafka(format!("Failed to create consumer: {}", e)))?;
+            .map_err(|e| GatewayError::Kafka(format!("创建消费者失败: {}", e)))?;
 
         let cmd_topic =
             CloudMessage::cmd_topic(&config.topic_prefix, &config.cmd_topic_suffix, gateway_id);
         consumer
             .subscribe(&[&cmd_topic])
-            .map_err(|e| GatewayError::Kafka(format!("Failed to subscribe: {}", e)))?;
+            .map_err(|e| GatewayError::Kafka(format!("订阅主题失败: {}", e)))?;
 
         info!("Kafka 消费者（Redis 模式）已订阅: {}", cmd_topic);
 
@@ -169,13 +169,13 @@ impl KafkaConsumer {
             .set("session.timeout.ms", "10000")
             .set("socket.connection.setup.timeout.ms", "5000")
             .create()
-            .map_err(|e| GatewayError::Kafka(format!("Failed to create consumer: {}", e)))?;
+            .map_err(|e| GatewayError::Kafka(format!("创建消费者失败: {}", e)))?;
 
         let resp_topic =
             CloudMessage::resp_topic(&config.topic_prefix, &config.resp_topic_suffix, gateway_id);
         consumer
             .subscribe(&[&resp_topic])
-            .map_err(|e| GatewayError::Kafka(format!("Failed to subscribe: {}", e)))?;
+            .map_err(|e| GatewayError::Kafka(format!("订阅主题失败: {}", e)))?;
 
         info!("Kafka 消费者（Kafka 模式）已订阅: {}", resp_topic);
 

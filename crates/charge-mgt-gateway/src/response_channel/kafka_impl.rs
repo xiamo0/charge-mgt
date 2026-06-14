@@ -131,7 +131,7 @@ impl PendingRequestTracker {
                                 let call_error = CallError::new(
                                     &request.unique_id,
                                     "InternalError",
-                                    "Cloud platform response timeout",
+                                    "云平台响应超时",
                                 );
                                 let error_json =
                                     serde_json::to_string(&call_error).unwrap_or_default();

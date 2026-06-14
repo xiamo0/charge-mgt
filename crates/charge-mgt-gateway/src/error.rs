@@ -6,43 +6,43 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum GatewayError {
     /// WebSocket 连接或通信错误
-    #[error("WebSocket error: {0}")]
+    #[error("WebSocket 错误: {0}")]
     WebSocket(String),
 
     /// 充电桩连接管理错误
-    #[error("Connection error: {0}")]
+    #[error("连接错误: {0}")]
     Connection(String),
 
     /// OCPP 协议层错误
-    #[error("Protocol error: {0}")]
+    #[error("协议错误: {0}")]
     Protocol(String),
 
     /// 未识别的充电桩厂商
-    #[error("Unknown vendor: {0}")]
+    #[error("未知厂商: {0}")]
     UnknownVendor(String),
 
     /// 消息序列化/反序列化错误
-    #[error("Message encode/decode error: {0}")]
+    #[error("消息编解码错误: {0}")]
     Codec(String),
 
     /// Kafka 生产/消费错误
-    #[error("Kafka error: {0}")]
+    #[error("Kafka 错误: {0}")]
     Kafka(String),
 
     /// Redis 连接或命令错误
-    #[error("Redis error: {0}")]
+    #[error("Redis 错误: {0}")]
     Redis(String),
 
     /// 云端 REST API 调用错误
-    #[error("Cloud API error: {0}")]
+    #[error("云端 API 错误: {0}")]
     CloudApi(String),
 
     /// 配置加载或校验错误
-    #[error("Configuration error: {0}")]
+    #[error("配置错误: {0}")]
     Config(String),
 
     /// 等待云端响应超时
-    #[error("Timeout: {0}")]
+    #[error("超时: {0}")]
     Timeout(String),
 }
 

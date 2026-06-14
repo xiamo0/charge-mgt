@@ -24,11 +24,11 @@ impl RedisResponseChannel {
     /// 连接 Redis 并创建响应通道
     pub async fn new(config: &RedisConfig) -> Result<Self> {
         let client = redis::Client::open(config.url.as_str())
-            .map_err(|e| GatewayError::Redis(format!("Failed to create client: {}", e)))?;
+            .map_err(|e| GatewayError::Redis(format!("创建 Redis 客户端失败: {}", e)))?;
         let conn = client
             .get_multiplexed_tokio_connection()
             .await
-            .map_err(|e| GatewayError::Redis(format!("Failed to connect: {}", e)))?;
+            .map_err(|e| GatewayError::Redis(format!("连接 Redis 失败: {}", e)))?;
 
         info!("Redis 已连接: {}", config.url);
         Ok(Self {
@@ -90,7 +90,7 @@ impl ResponseChannel for RedisResponseChannel {
                     let call_error = CallError::new(
                         &unique_id,
                         "InternalError",
-                        "Cloud platform response timeout",
+                        "云平台响应超时",
                     );
                     let json = serde_json::to_string(&call_error).unwrap_or_default();
                     response_tx.send(json).ok();
@@ -101,7 +101,7 @@ impl ResponseChannel for RedisResponseChannel {
                         key, charge_point_id, e
                     );
                     let call_error =
-                        CallError::new(&unique_id, "InternalError", &format!("Redis error: {}", e));
+                        CallError::new(&unique_id, "InternalError", &format!("Redis 错误: {}", e));
                     let json = serde_json::to_string(&call_error).unwrap_or_default();
                     response_tx.send(json).ok();
                 }
