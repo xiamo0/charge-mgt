@@ -24,7 +24,7 @@ impl MessageDispatcher {
             info!(
                 message_type = %msg.message_type,
                 unique_id = %msg.unique_id,
-                "skipping non-Call message"
+                "跳过非 Call 类型消息"
             );
             return Ok(());
         }
@@ -56,7 +56,7 @@ impl MessageDispatcher {
         if !inserted {
             info!(
                 unique_id = %msg.unique_id,
-                "duplicate message, skipping (idempotency)"
+                "重复消息，跳过（幂等保护）"
             );
             return Ok(());
         }
@@ -65,7 +65,7 @@ impl MessageDispatcher {
             action = %msg.action,
             charge_point_id = %msg.charge_point_id,
             unique_id = %msg.unique_id,
-            "dispatching OCPP Call"
+            "正在分发 OCPP Call"
         );
 
         let handler_result = Self::route_handler(&self.state, &msg).await;
@@ -78,7 +78,7 @@ impl MessageDispatcher {
                     action = %msg.action,
                     unique_id = %msg.unique_id,
                     error_code = %code,
-                    "handler returned CallError"
+                    "handler 返回 CallError"
                 );
                 msg.new_call_error(code, &desc)
             }
@@ -102,7 +102,7 @@ impl MessageDispatcher {
             "BootNotification" => boot_notification::handle(state, msg).await,
             "Heartbeat" => heartbeat::handle(state, msg).await,
             other => {
-                warn!(action = %other, "unsupported OCPP action");
+                warn!(action = %other, "不支持的 OCPP action");
                 Err(HandlerError::NotSupported(format!("action '{other}' not implemented")))
             }
         }
@@ -115,12 +115,12 @@ impl MessageDispatcher {
 
 #[derive(Debug, thiserror::Error)]
 pub enum DispatchError {
-    #[error("malformed message: {0}")]
+    #[error("消息格式错误：{0}")]
     Malformed(String),
-    #[error("database error: {0}")]
+    #[error("数据库错误：{0}")]
     Database(String),
-    #[error("serialize error: {0}")]
+    #[error("序列化错误：{0}")]
     Serialize(String),
-    #[error("kafka send error: {0}")]
+    #[error("Kafka 发送错误：{0}")]
     Kafka(String),
 }

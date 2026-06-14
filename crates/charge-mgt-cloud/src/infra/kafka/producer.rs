@@ -15,7 +15,7 @@ impl KafkaProducer {
             .set("message.timeout.ms", "5000")
             .set("compression.type", "lz4")
             .create()?;
-        info!(brokers = %brokers, "Kafka producer created");
+        info!(brokers = %brokers, "Kafka 生产者已创建");
         Ok(Self { producer })
     }
 
@@ -27,11 +27,11 @@ impl KafkaProducer {
                     topic = %topic,
                     partition = %partition,
                     offset = %offset,
-                    "kafka send ok"
+                    "Kafka 发送成功"
                 );
                 Ok(())
             }
-            Err((e, _)) => Err(format!("kafka send failed: {e}")),
+            Err((e, _)) => Err(format!("Kafka 发送失败：{e}")),
         }
     }
 }

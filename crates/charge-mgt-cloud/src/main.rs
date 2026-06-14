@@ -34,13 +34,13 @@ async fn main() -> anyhow::Result<()> {
     let config_path = parse_config_path();
     let config = AppConfig::load(&config_path)?;
 
-    info!(config_path = %config_path.display(), "loaded config");
+    info!(config_path = %config_path.display(), "已加载配置");
 
     let db = db::connect(&config.database.url, config.database.max_connections).await?;
-    info!(url = %mask_url(&config.database.url), "connected to postgres");
+    info!(url = %mask_url(&config.database.url), "已连接 PostgreSQL");
 
     db::run_migrations(&db).await?;
-    info!("applied database migrations");
+    info!("已应用数据库迁移");
 
     let producer = KafkaProducer::new(&config.kafka.brokers)?;
 
@@ -60,7 +60,7 @@ async fn main() -> anyhow::Result<()> {
     )
     .parse()?;
 
-    info!(cloud_id = %config.cloud.id, %addr, "starting charge-mgt-cloud HTTP server");
+    info!(cloud_id = %config.cloud.id, %addr, "启动 charge-mgt-cloud HTTP 服务");
 
     Server::bind(&addr)
         .serve(app.into_make_service())

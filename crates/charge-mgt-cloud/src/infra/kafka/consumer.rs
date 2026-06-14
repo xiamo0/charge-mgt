@@ -19,7 +19,7 @@ pub async fn spawn_kafka_consumer(state: AppState) -> anyhow::Result<()> {
 
     let topics = resolve_req_topics(&state, &consumer);
     if topics.is_empty() {
-        warn!("no req topics available, consumer will be idle (restart cloud when gateway is running)");
+        warn!("无可用 req 话题，消费者空闲（Gateway 启动后重启 cloud）");
         return Ok(());
     }
 
@@ -28,7 +28,7 @@ pub async fn spawn_kafka_consumer(state: AppState) -> anyhow::Result<()> {
 
     info!(
         consumer_group = %state.config.kafka.consumer_group,
-        "Kafka consumer subscribed to {} topics: {:?}",
+        "Kafka 消费者已订阅 {} 个话题：{:?}",
         topics.len(),
         topics,
     );
@@ -51,15 +51,15 @@ pub async fn spawn_kafka_consumer(state: AppState) -> anyhow::Result<()> {
                         Some(Ok(borrowed_message)) => {
                             if let Some(payload) = borrowed_message.payload() {
                                 if let Err(e) = dispatcher.dispatch(payload).await {
-                                    error!(error = %e, "dispatch failed");
+                                    error!(error = %e, "分发失败");
                                 }
                             }
                         }
                         Some(Err(e)) => {
-                            error!(error = %e, "kafka consume error");
+                            error!(error = %e, "Kafka 消费错误");
                         }
                         None => {
-                            warn!("kafka stream ended");
+                            warn!("Kafka 流已结束");
                             break;
                         }
                     }
@@ -71,7 +71,7 @@ pub async fn spawn_kafka_consumer(state: AppState) -> anyhow::Result<()> {
                     let metadata = match consumer.fetch_metadata(None, Duration::from_secs(5)) {
                         Ok(m) => m,
                         Err(e) => {
-                            warn!("re-discovery metadata fetch failed: {e}");
+                            warn!("重发现 metadata 拉取失败：{e}");
                             continue;
                         }
                     };
@@ -81,7 +81,7 @@ pub async fn spawn_kafka_consumer(state: AppState) -> anyhow::Result<()> {
                         .collect();
                     if discovered.len() > topic_count {
                         info!(
-                            "re-discovery: {} -> {} topics, re-subscribing",
+                            "重发现：{} -> {} 个话题，重新订阅",
                             topic_count,
                             discovered.len(),
                         );
@@ -90,9 +90,9 @@ pub async fn spawn_kafka_consumer(state: AppState) -> anyhow::Result<()> {
                             Ok(()) => {
                                 topic_count = discovered.len();
                                 stream = consumer.stream();
-                                info!("re-subscribed to {} topics", topic_count);
+                                info!("已重新订阅 {} 个话题", topic_count);
                             }
-                            Err(e) => error!("re-subscribe failed: {e}"),
+                            Err(e) => error!("重新订阅失败：{e}"),
                         }
                     }
                 }
@@ -106,7 +106,7 @@ pub async fn spawn_kafka_consumer(state: AppState) -> anyhow::Result<()> {
 fn resolve_req_topics(state: &AppState, consumer: &StreamConsumer) -> Vec<String> {
     let topics = &state.config.kafka.req_topics;
     if !topics.is_empty() {
-        info!("using explicit req_topics from config: {:?}", topics);
+        info!("使用配置中显式指定的 req_topics：{:?}", topics);
         return topics.clone();
     }
 
@@ -114,7 +114,7 @@ fn resolve_req_topics(state: &AppState, consumer: &StreamConsumer) -> Vec<String
     let metadata = match consumer.fetch_metadata(None, Duration::from_secs(10)) {
         Ok(m) => m,
         Err(e) => {
-            warn!("failed to fetch kafka metadata: {e}");
+            warn!("拉取 Kafka metadata 失败：{e}");
             return Vec::new();
         }
     };
@@ -128,12 +128,12 @@ fn resolve_req_topics(state: &AppState, consumer: &StreamConsumer) -> Vec<String
 
     if discovered.is_empty() {
         warn!(
-            "no topics found matching '{}*' — is the gateway running?",
+            "未找到匹配 '{}*' 的话题——Gateway 是否已启动？",
             pattern,
         );
     } else {
         info!(
-            "discovered {} req topics matching `{}*`: {:?}",
+            "已发现 {} 个匹配 `{}*` 的 req 话题：{:?}",
             discovered.len(),
             pattern,
             discovered,
