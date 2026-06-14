@@ -1,8 +1,11 @@
+use sea_orm::sea_query::Value;
+use sea_orm::{ConnectionTrait, DatabaseBackend, Statement};
+use tracing::{info, warn};
+
 use crate::ocpp::envelope::CloudMessage;
 use crate::ocpp::error::HandlerError;
 use crate::ocpp::handlers::{boot_notification, heartbeat};
 use crate::state::AppState;
-use tracing::{info, warn};
 
 pub struct MessageDispatcher {
     state: AppState,
@@ -26,24 +29,29 @@ impl MessageDispatcher {
             return Ok(());
         }
 
-        let inserted = sqlx::query_scalar::<_, bool>(
-            r#"
-            INSERT INTO charge_mgt_sent_messages_ocpp_1_6
-                (unique_id, gateway_id, charge_point_id, direction, action, message_type)
-            VALUES ($1, $2, $3, 'inbound', $4, $5)
-            ON CONFLICT (unique_id) DO NOTHING
-            RETURNING true
-            "#,
-        )
-        .bind(&msg.unique_id)
-        .bind(&msg.gateway_id)
-        .bind(&msg.charge_point_id)
-        .bind(&msg.action)
-        .bind(&msg.message_type)
-        .fetch_optional(&self.state.db)
-        .await
-        .map_err(|e| DispatchError::Database(e.to_string()))?
-        .is_some();
+        let stmt = Statement::from_sql_and_values(
+            DatabaseBackend::Postgres,
+            "INSERT INTO charge_mgt_sent_messages_ocpp_1_6 \
+             (unique_id, gateway_id, charge_point_id, direction, action, message_type) \
+             VALUES ($1, $2, $3, 'inbound', $4, $5) \
+             ON CONFLICT (unique_id) DO NOTHING \
+             RETURNING true",
+            vec![
+                Value::String(Some(Box::new(msg.unique_id.clone()))),
+                Value::String(Some(Box::new(msg.gateway_id.clone()))),
+                Value::String(Some(Box::new(msg.charge_point_id.clone()))),
+                Value::String(Some(Box::new(msg.action.clone()))),
+                Value::String(Some(Box::new(msg.message_type.clone()))),
+            ],
+        );
+
+        let inserted = self
+            .state
+            .db
+            .query_one(stmt)
+            .await
+            .map_err(|e| DispatchError::Database(e.to_string()))?
+            .is_some();
 
         if !inserted {
             info!(

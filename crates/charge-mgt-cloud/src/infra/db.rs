@@ -1,20 +1,15 @@
-use sqlx::postgres::{PgPool, PgPoolOptions};
-use sqlx::Executor;
+use migration::MigratorTrait;
+use sea_orm::{ConnectOptions, ConnectionTrait, Database, DatabaseConnection, DbErr};
 
-pub type DbPool = PgPool;
-
-pub async fn connect(url: &str, max_conns: u32) -> Result<DbPool, sqlx::Error> {
-    PgPoolOptions::new()
-        .max_connections(max_conns)
-        .connect(url)
-        .await
+pub async fn connect(url: &str, max_conns: u32) -> Result<DatabaseConnection, DbErr> {
+    let mut opt = ConnectOptions::new(url);
+    opt.max_connections(max_conns);
+    opt.sqlx_logging(false);
+    let db = Database::connect(opt).await?;
+    db.execute_unprepared("SET statement_timeout = '30s'").await?;
+    Ok(db)
 }
 
-pub async fn run_migrations(pool: &DbPool) -> Result<(), sqlx::migrate::MigrateError> {
-    pool.execute("SET statement_timeout = '30s'")
-        .await
-        .map_err(sqlx::migrate::MigrateError::Execute)?;
-    let migrator = sqlx::migrate!("./migrations");
-    migrator.run(pool).await?;
-    Ok(())
+pub async fn run_migrations(db: &DatabaseConnection) -> Result<(), DbErr> {
+    migration::Migrator::up(db, None).await.map(|_| ())
 }

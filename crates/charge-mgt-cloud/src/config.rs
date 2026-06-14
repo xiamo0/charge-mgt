@@ -34,6 +34,8 @@ pub struct KafkaConfig {
     pub consumer_group: String,
     #[serde(default = "default_topic_prefix")]
     pub topic_prefix: String,
+    /// 需消费的 Kafka topic 列表；若为空则启动时自动发现所有 {topic_prefix}.req.* 话题
+    #[serde(default)]
     pub req_topics: Vec<String>,
 }
 

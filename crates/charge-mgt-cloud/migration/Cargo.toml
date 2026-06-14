@@ -1,0 +1,11 @@
+[package]
+name = "migration"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[dependencies]
+sea-orm.workspace = true
+sea-orm-migration.workspace = true
+tokio.workspace = true
+chrono.workspace = true

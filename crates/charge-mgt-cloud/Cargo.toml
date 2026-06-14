@@ -22,16 +22,11 @@ chrono = { workspace = true }
 # OCPP 消息结构（复用）
 ocpp_1_6 = { path = "../ocpp-1-6" }
 
-# 数据库（PG + migrations）
-sqlx = { version = "0.7", default-features = false, features = [
-    "runtime-tokio-native-tls",
-    "postgres",
-    "chrono",
-    "uuid",
-    "json",
-    "migrate",
-    "macros"
-] }
+# 数据库（PG + sea-orm）
+sea-orm.workspace = true
+
+# 项目内 migration crate（等价原 SQL 迁移）
+migration = { path = "migration" }
 
 # Kafka（复用 gateway 的版本，保证消息体互操作）
 rdkafka = { version = "0.36", features = ["cmake-build"] }

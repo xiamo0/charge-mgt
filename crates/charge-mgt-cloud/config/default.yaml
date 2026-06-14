@@ -11,7 +11,10 @@ kafka:
   brokers: "127.0.0.1:9092"
   consumer_group: "charge-mgt-cloud-consumer"
   topic_prefix: "charge_mgt"
+  # req_topics 留空 = 自动发现所有 charge_mgt.req.* 话题（无需重启加 vendor）
   req_topics:
-    - "charge_mgt.req.Alphas"
-    - "charge_mgt.req.Beta"
-    - "charge_mgt.req.SimVendor"
+    []
+  # 也可显式列出：
+  #   - "charge_mgt.req.Alphas"
+  #   - "charge_mgt.req.Beta"
+  #   - "charge_mgt.req.SimVendor"

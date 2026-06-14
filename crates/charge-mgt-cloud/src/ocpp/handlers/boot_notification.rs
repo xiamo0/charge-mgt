@@ -1,6 +1,12 @@
 use chrono::Utc;
+use sea_orm::sea_query::{OnConflict, Value};
+use sea_orm::{ActiveValue::Set, ConnectionTrait, DatabaseBackend, EntityTrait, Statement};
 use serde::{Deserialize, Serialize};
 
+use crate::entity::{
+    charge_points::{ActiveModel as CpActiveModel, Column as CpColumn},
+    ChargePoints,
+};
 use crate::ocpp::envelope::CloudMessage;
 use crate::ocpp::error::HandlerError;
 use crate::state::AppState;
@@ -57,58 +63,59 @@ pub async fn handle(state: &AppState, msg: &CloudMessage) -> Result<serde_json::
             )
         })?;
 
-    let insert_result = sqlx::query(
-        r#"
-        INSERT INTO charge_mgt_charge_points_ocpp_1_6 (
-            id, gateway_id, gateway_ip, vendor, model,
-            serial_number, charge_box_serial,
-            firmware_version, iccid, imsi, meter_type, meter_serial_number,
-            protocol_version, ocpp_status, last_boot_at, last_heartbeat_at,
-            registered_at, updated_at
-        ) VALUES (
-            $1, $2, $3, $4, $5,
-            $6, $7,
-            $8, $9, $10, $11, $12,
-            'OCPP-1.6', 'Online', now(), now(),
-            now(), now()
-        )
-        ON CONFLICT (id) DO UPDATE SET
-            firmware_version = EXCLUDED.firmware_version,
-            gateway_id = EXCLUDED.gateway_id,
-            gateway_ip = EXCLUDED.gateway_ip,
-            ocpp_status = 'Online',
-            last_boot_at = now(),
-            last_heartbeat_at = now(),
-            updated_at = now()
-        "#,
-    )
-    .bind(&cp_id)
-    .bind(&msg.gateway_id)
-    .bind(&msg.gateway_ip)
-    .bind(&req.vendor)
-    .bind(&req.model)
-    .bind(&req.charge_point_serial_number)
-    .bind(&req.charge_box_serial_number)
-    .bind(&req.firmware_version)
-    .bind(&req.iccid)
-    .bind(&req.imsi)
-    .bind(&req.meter_type)
-    .bind(&req.meter_serial_number)
-    .execute(&state.db)
-    .await?;
+    let now = Utc::now().into();
 
-    let _ = insert_result;
+    let cp = CpActiveModel {
+        id: Set(cp_id.clone()),
+        gateway_id: Set(msg.gateway_id.clone()),
+        gateway_ip: Set(Some(msg.gateway_ip.clone())),
+        vendor: Set(req.vendor.clone()),
+        model: Set(req.model.clone()),
+        serial_number: Set(req.charge_point_serial_number.clone()),
+        charge_box_serial: Set(req.charge_box_serial_number.clone()),
+        firmware_version: Set(req.firmware_version.clone()),
+        iccid: Set(req.iccid.clone()),
+        imsi: Set(req.imsi.clone()),
+        meter_type: Set(req.meter_type.clone()),
+        meter_serial_number: Set(req.meter_serial_number.clone()),
+        protocol_version: Set("OCPP-1.6".to_string()),
+        ocpp_status: Set("Online".to_string()),
+        heartbeat_interval_secs: Set(30),
+        last_heartbeat_at: Set(Some(now)),
+        last_boot_at: Set(Some(now)),
+        registered_at: Set(now),
+        updated_at: Set(now),
+        is_deleted: Set(false),
+    };
 
-    sqlx::query(
-        r#"
-        INSERT INTO charge_mgt_connectors_ocpp_1_6 (charge_point_id, connector_id, status)
-        VALUES ($1, 0, 'Available')
-        ON CONFLICT (charge_point_id, connector_id) DO NOTHING
-        "#,
-    )
-    .bind(&cp_id)
-    .execute(&state.db)
-    .await?;
+    let mut on_cp_conflict = OnConflict::column(CpColumn::Id);
+    on_cp_conflict.update_columns([
+        CpColumn::FirmwareVersion,
+        CpColumn::GatewayId,
+        CpColumn::GatewayIp,
+        CpColumn::OcppStatus,
+        CpColumn::LastBootAt,
+        CpColumn::LastHeartbeatAt,
+        CpColumn::UpdatedAt,
+    ]);
+
+    ChargePoints::insert(cp)
+        .on_conflict(on_cp_conflict)
+        .exec(&state.db)
+        .await?;
+
+    let conn_stmt = Statement::from_sql_and_values(
+        DatabaseBackend::Postgres,
+        "INSERT INTO charge_mgt_connectors_ocpp_1_6 (charge_point_id, connector_id, status) \
+         VALUES ($1, $2, $3::charge_mgt_connector_status) \
+         ON CONFLICT (charge_point_id, connector_id) DO NOTHING",
+        vec![
+            Value::String(Some(Box::new(cp_id))),
+            Value::Int(Some(0)),
+            Value::String(Some(Box::new("Available".to_string()))),
+        ],
+    );
+    state.db.execute(conn_stmt).await?;
 
     let response = Response {
         status: "Accepted".into(),

@@ -4,6 +4,7 @@ use std::sync::Arc;
 use axum::extract::Extension;
 use axum::response::Json;
 use axum::{routing::get, Router, Server};
+use sea_orm::{ConnectionTrait, Statement, DbBackend};
 use tracing::info;
 
 use charge_mgt_cloud::config::AppConfig;
@@ -35,17 +36,17 @@ async fn main() -> anyhow::Result<()> {
 
     info!(config_path = %config_path.display(), "loaded config");
 
-    let db_pool = db::connect(&config.database.url, config.database.max_connections).await?;
+    let db = db::connect(&config.database.url, config.database.max_connections).await?;
     info!(url = %mask_url(&config.database.url), "connected to postgres");
 
-    db::run_migrations(&db_pool).await?;
+    db::run_migrations(&db).await?;
     info!("applied database migrations");
 
     let producer = KafkaProducer::new(&config.kafka.brokers)?;
 
     let state = AppState {
         config: config.clone(),
-        db: db_pool,
+        db,
         producer,
     };
 
@@ -84,8 +85,9 @@ async fn root() -> Json<serde_json::Value> {
 }
 
 async fn health(Extension(state): Extension<Arc<AppState>>) -> Json<serde_json::Value> {
-    let db_ok = sqlx::query_scalar::<_, i32>("SELECT 1")
-        .fetch_one(&state.db)
+    let db_ok = state
+        .db
+        .execute(Statement::from_string(DbBackend::Postgres, "SELECT 1".to_string()))
         .await
         .is_ok();
 

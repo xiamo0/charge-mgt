@@ -27,8 +27,8 @@ impl HandlerError {
     }
 }
 
-impl From<sqlx::Error> for HandlerError {
-    fn from(e: sqlx::Error) -> Self {
+impl From<sea_orm::DbErr> for HandlerError {
+    fn from(e: sea_orm::DbErr) -> Self {
         Self::InternalError(e.to_string())
     }
 }
