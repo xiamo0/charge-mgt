@@ -2,8 +2,8 @@
 //!
 //! 将充电桩上行消息发布到按厂商分区的请求主题。
 
-use rdkafka::producer::FutureProducer;
 use rdkafka::ClientConfig;
+use rdkafka::producer::FutureProducer;
 use tracing::{error, info};
 
 use crate::cloud::message::CloudMessage;

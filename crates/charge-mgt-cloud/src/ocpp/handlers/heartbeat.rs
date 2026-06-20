@@ -3,7 +3,7 @@ use sea_orm::sea_query::Expr;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use serde::Serialize;
 
-use crate::entity::{charge_points::Column as CpColumn, ChargePoints};
+use crate::entity::{ChargePoints, charge_points::Column as CpColumn};
 use crate::ocpp::envelope::CloudMessage;
 use crate::ocpp::error::HandlerError;
 use crate::state::AppState;

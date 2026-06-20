@@ -4,9 +4,7 @@ pub mod connectors;
 pub mod sent_messages;
 
 pub use charge_points::{
-    Entity as ChargePoints,
-    Column as ChargePointColumn,
-    Model as ChargePointModel,
+    Column as ChargePointColumn, Entity as ChargePoints, Model as ChargePointModel,
 };
 
 pub use connectors::{
@@ -19,4 +17,4 @@ pub use sent_messages::{
     Model as SentMessageModel,
 };
 
-pub use connector_status::{from_str_status, ConnectorStatus};
+pub use connector_status::{ConnectorStatus, from_str_status};

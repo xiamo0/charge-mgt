@@ -12,7 +12,7 @@ pub struct Model {
     pub action: String,
     pub message_type: String,
     pub received_at: DateTimeWithTimeZone,
-    pub processed_at: Option<DateTimeWithTimeZone>,
+    pub processed_at: DateTimeWithTimeZone,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

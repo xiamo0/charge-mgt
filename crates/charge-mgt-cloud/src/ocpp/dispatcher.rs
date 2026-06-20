@@ -1,12 +1,12 @@
-use sea_orm::sea_query::Value;
-use sea_orm::{ConnectionTrait, DatabaseBackend, Statement};
-use tracing::{info, warn};
-
+use crate::entity::sent_messages;
 use crate::ocpp::envelope::CloudMessage;
 use crate::ocpp::error::HandlerError;
 use crate::ocpp::handlers::{boot_notification, heartbeat};
 use crate::state::AppState;
-use crate::entity::sent_messages::{SentMessages, SentMessagesActiveModel};
+use chrono::Local;
+use sea_orm::sea_query::Value;
+use sea_orm::{ConnectionTrait, DatabaseBackend, EntityTrait, Set, Statement, TryInsertResult};
+use tracing::{info, warn};
 
 pub struct MessageDispatcher {
     state: AppState,
@@ -21,34 +21,46 @@ impl MessageDispatcher {
         let msg: CloudMessage =
             serde_json::from_slice(bytes).map_err(|e| DispatchError::Malformed(e.to_string()))?;
 
-
-        let new_message = SentMessages::ActiveModel {
-            unique_id: msg.unique_id.clone(),
-            gateway_id: msg.gateway_id.clone(),
-            charge_point_id: msg.charge_point_id.clone(),
-            direction: msg.message_type.clone(),
-            action: msg.action.clone(),
-            message_type: msg.message_type.clone(),
-            received_at: msg.received_at,
-            processed_at: chrono::Utc::now(),
+        let new_message = sent_messages::ActiveModel {
+            unique_id: Set(msg.unique_id.clone()),
+            gateway_id: Set(msg.gateway_id.clone()),
+            charge_point_id: Set(msg.charge_point_id.clone()),
+            direction: Set(msg.message_type.clone()),
+            action: Set(msg.action.clone()),
+            message_type: Set(msg.message_type.clone()),
+            received_at: Set(Local::now().with_timezone(Local::now().offset())),
+            processed_at: Set(Local::now().with_timezone(Local::now().offset())),
         };
-        let result = SentMessages::insert(new_message)
-            .on_conflict(
-                OnConflict::columns([SentMessages::Column::UniqueId])
-                    .do_nothing()
-                    .to_owned(),
-            )
-            .exec(&self.state.db)
-            .await?;
 
-        let exists = SentMessages::find_by_id(msg.unique_id.clone()).one(&self.state.db).await.is_some()?;
-        if exists {
-            info!(
+
+        let res = sent_messages::Entity::insert(new_message)
+            .on_conflict_do_nothing()
+            .exec(&self.state.db)
+            .await
+            .map_err(|e| DispatchError::Database(e.to_string()))?;
+
+        match res {
+                TryInsertResult::Inserted(keys) => {
+                info!(
+                "新消息，开始处理{:?}",keys.last_insert_id
+                );
+            }
+            TryInsertResult::Conflicted => {
+                info!(
                 unique_id = %msg.unique_id,
                 "重复消息，跳过（幂等保护）"
-            );
-            return Ok(());
+                );
+                return Ok(());
+            }
+            TryInsertResult::Empty => {
+                info!(
+                unique_id = %msg.unique_id,
+                "消息已存在但未插入，可能是数据库异常，跳过"
+                );
+                return Ok(());
+            }
         }
+
         let handler_result = Self::route_handler(&self.state, &msg).await;
 
         let response = match handler_result {

@@ -116,9 +116,6 @@ CREATE TABLE charge_mgt_sent_messages_ocpp_1_6 (
     message_type     VARCHAR(16)     NOT NULL,               -- 'Call' | 'CallResult' | 'CallError'
     received_at      TIMESTAMPTZ     NOT NULL DEFAULT now(),
     processed_at     TIMESTAMPTZ,
-
-    CONSTRAINT charge_mgt_sm_dir_chk
-        CHECK (direction IN ('inbound', 'outbound'))
 );
 
 COMMENT ON TABLE  charge_mgt_sent_messages_ocpp_1_6 IS '消息去重 / idempotency 屏障，Kafka 至少一次语义的防线';

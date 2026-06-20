@@ -24,17 +24,17 @@ thiserror = "2.0"
 tracing = "0.1"
 chrono = { version = "0.4", features = ["serde"] }
 axum = "0.4"
-uuid = { version = "=1.6.1", features = ["v4"] }
-getrandom = "0.2"
-rand = "0.8"
+uuid = { version = "=1.23.3", features = ["v4"] }
+getrandom = "0.4.3"
+rand = "0.10.1"
 
-sea-orm = { version = "1.1", features = [
+sea-orm = { version = "2.0.0-rc.41", features = [
     "sqlx-postgres",
     "runtime-tokio-native-tls",
     "macros",
     "with-chrono",
 ] }
-sea-orm-migration = { version = "1.1", features = [
+sea-orm-migration = { version = "2.0.0-rc.41", features = [
     "sqlx-postgres",
     "runtime-tokio-native-tls",
 ] }

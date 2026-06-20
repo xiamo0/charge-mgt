@@ -1,12 +1,12 @@
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
 use serde_json::json;
 use tokio::sync::Mutex;
 use tokio_util::sync::CancellationToken;
 
-use crate::ocpp::client::{send_call_with_timeout, OcppClient};
+use crate::ocpp::client::{OcppClient, send_call_with_timeout};
 
 pub struct HeartbeatScheduler {
     cancel: CancellationToken,

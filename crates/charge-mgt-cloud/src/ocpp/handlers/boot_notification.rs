@@ -1,3 +1,5 @@
+use crate::entity::ChargePointColumn;
+use crate::entity::ChargePoints;
 use crate::ocpp::envelope::CloudMessage;
 use crate::ocpp::error::HandlerError;
 use crate::state::AppState;
@@ -5,8 +7,6 @@ use chrono::Utc;
 use ocpp_1_6::calls::BootNotificationRequest;
 use ocpp_1_6::confs::BootNotificationConfirmation;
 use sea_orm::*;
-use crate::entity::ChargePointColumn;
-use crate::entity::ChargePoints;
 pub async fn handle(
     state: &AppState,
     msg: &CloudMessage,
@@ -24,12 +24,12 @@ pub async fn handle(
         ));
     }
 
-    let charge_point_serial_number = req.charge_point_serial_number.ok_or_else(|| HandlerError::FormationViolation(
-        "charge_point_serial_number must not null".into(),
-    ))?;
-    let charge_box_serial_number = req.charge_box_serial_number.ok_or_else(|| HandlerError::FormationViolation(
-        "charge_box_serial_number must not null".into(),
-    ))?;
+    let charge_point_serial_number = req.charge_point_serial_number.ok_or_else(|| {
+        HandlerError::FormationViolation("charge_point_serial_number must not null".into())
+    })?;
+    let charge_box_serial_number = req.charge_box_serial_number.ok_or_else(|| {
+        HandlerError::FormationViolation("charge_box_serial_number must not null".into())
+    })?;
     //判断表中是否有相同的 charge_point_serial_number 或 charge_box_serial_number
     //如果没有 返回 Err(HandlerError::FormationViolation("charge_point_serial_number or charge_box_serial_number already exists".into()))
 

@@ -4,11 +4,11 @@
 //! - `KafkaConsumer`：订阅云端下行消息，转换为 OCPP 格式回传充电桩
 
 use futures_util::StreamExt;
+use rdkafka::ClientConfig;
 use rdkafka::consumer::{Consumer, StreamConsumer};
 use rdkafka::message::Message;
-use rdkafka::ClientConfig;
 use std::sync::Arc;
-use tokio::sync::{mpsc, RwLock};
+use tokio::sync::{RwLock, mpsc};
 use tracing::{error, info, warn};
 
 use crate::cloud::message::CloudMessage;

@@ -3,8 +3,8 @@ use std::sync::Arc;
 
 use axum::extract::Extension;
 use axum::response::Json;
-use axum::{routing::get, Router, Server};
-use sea_orm::{ConnectionTrait, DbBackend, Statement};
+use axum::{Router, Server, routing::get};
+use sea_orm::{ConnectionTrait};
 use tracing::info;
 
 use charge_mgt_cloud::config::AppConfig;
@@ -83,14 +83,7 @@ async fn root() -> Json<serde_json::Value> {
 }
 
 async fn health(Extension(state): Extension<Arc<AppState>>) -> Json<serde_json::Value> {
-    let db_ok = state
-        .db
-        .execute(Statement::from_string(
-            DbBackend::Postgres,
-            "SELECT 1".to_string(),
-        ))
-        .await
-        .is_ok();
+    let db_ok = state.db.execute_unprepared("SELECT 1").await.is_ok();
 
     let status = if db_ok { "ok" } else { "degraded" };
     Json(serde_json::json!({

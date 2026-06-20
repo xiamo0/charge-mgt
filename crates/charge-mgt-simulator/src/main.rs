@@ -1,13 +1,13 @@
 use charge_mgt_simulator::cli::parse_args;
 use charge_mgt_simulator::heartbeat::HeartbeatScheduler;
 use charge_mgt_simulator::ocpp::client::{IncomingEvent, OcppClient};
-use charge_mgt_simulator::repl::parser::{self, ReplCommand, COMMAND_TABLE};
+use charge_mgt_simulator::repl::parser::{self, COMMAND_TABLE, ReplCommand};
 use charge_mgt_simulator::repl::writer::{self, WriterOptions};
 use charge_mgt_simulator::session::log::Log;
 
 use colored::Colorize;
-use rustyline::error::ReadlineError;
 use rustyline::DefaultEditor;
+use rustyline::error::ReadlineError;
 use serde_json::json;
 use tokio::task::spawn_blocking;
 

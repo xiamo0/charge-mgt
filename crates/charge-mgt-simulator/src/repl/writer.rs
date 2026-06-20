@@ -17,11 +17,7 @@ impl WriterOptions {
 
     pub fn paint<T: ToString>(&self, text: T, f: fn(&str) -> ColoredString) -> String {
         let s = text.to_string();
-        if self.no_color {
-            s
-        } else {
-            f(&s).to_string()
-        }
+        if self.no_color { s } else { f(&s).to_string() }
     }
 }
 

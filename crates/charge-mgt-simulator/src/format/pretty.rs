@@ -12,11 +12,7 @@ pub fn pretty_one_line(v: &Value) -> String {
         Value::String(s) => format!("\"{s}\""),
         Value::Array(_) | Value::Object(_) => {
             let txt = serde_json::to_string(v).unwrap_or_else(|_| v.to_string());
-            if txt.len() > 80 {
-                pretty_json(v)
-            } else {
-                txt
-            }
+            if txt.len() > 80 { pretty_json(v) } else { txt }
         }
     }
 }
