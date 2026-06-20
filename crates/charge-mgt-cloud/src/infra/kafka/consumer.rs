@@ -127,10 +127,7 @@ fn resolve_req_topics(state: &AppState, consumer: &StreamConsumer) -> Vec<String
         .collect();
 
     if discovered.is_empty() {
-        warn!(
-            "未找到匹配 '{}*' 的话题——Gateway 是否已启动？",
-            pattern,
-        );
+        warn!("未找到匹配 '{}*' 的话题——Gateway 是否已启动？", pattern,);
     } else {
         info!(
             "已发现 {} 个匹配 `{}*` 的 req 话题：{:?}",

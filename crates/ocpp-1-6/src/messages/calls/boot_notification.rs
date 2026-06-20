@@ -9,14 +9,22 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BootNotificationRequest {
     /// 充电点厂商
+    #[serde(rename = "chargePointVendor")]
     pub charge_point_vendor: String,
     /// 充电点型号
+    #[serde(rename = "chargePointModel")]
     pub charge_point_model: String,
     /// 充电盒序列号（可选）
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        rename = "chargeBoxSerialNumber"
+    )]
     pub charge_box_serial_number: Option<String>,
     /// 充电点序列号（可选）
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        rename = "chargePointSerialNumber"
+    )]
     pub charge_point_serial_number: Option<String>,
     /// 固件版本（可选）
     #[serde(skip_serializing_if = "Option::is_none")]

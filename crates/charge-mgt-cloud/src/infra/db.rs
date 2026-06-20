@@ -6,7 +6,8 @@ pub async fn connect(url: &str, max_conns: u32) -> Result<DatabaseConnection, Db
     opt.max_connections(max_conns);
     opt.sqlx_logging(false);
     let db = Database::connect(opt).await?;
-    db.execute_unprepared("SET statement_timeout = '30s'").await?;
+    db.execute_unprepared("SET statement_timeout = '30s'")
+        .await?;
     Ok(db)
 }
 

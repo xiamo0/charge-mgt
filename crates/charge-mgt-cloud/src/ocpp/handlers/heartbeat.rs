@@ -14,7 +14,10 @@ pub struct Response {
     pub current_time: String,
 }
 
-pub async fn handle(state: &AppState, msg: &CloudMessage) -> Result<serde_json::Value, HandlerError> {
+pub async fn handle(
+    state: &AppState,
+    msg: &CloudMessage,
+) -> Result<serde_json::Value, HandlerError> {
     let now: sea_orm::prelude::DateTimeWithTimeZone = Utc::now().into();
 
     ChargePoints::update_many()

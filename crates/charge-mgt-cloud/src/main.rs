@@ -4,7 +4,7 @@ use std::sync::Arc;
 use axum::extract::Extension;
 use axum::response::Json;
 use axum::{routing::get, Router, Server};
-use sea_orm::{ConnectionTrait, Statement, DbBackend};
+use sea_orm::{ConnectionTrait, DbBackend, Statement};
 use tracing::info;
 
 use charge_mgt_cloud::config::AppConfig;
@@ -62,9 +62,7 @@ async fn main() -> anyhow::Result<()> {
 
     info!(cloud_id = %config.cloud.id, %addr, "启动 charge-mgt-cloud HTTP 服务");
 
-    Server::bind(&addr)
-        .serve(app.into_make_service())
-        .await?;
+    Server::bind(&addr).serve(app.into_make_service()).await?;
 
     Ok(())
 }
@@ -87,7 +85,10 @@ async fn root() -> Json<serde_json::Value> {
 async fn health(Extension(state): Extension<Arc<AppState>>) -> Json<serde_json::Value> {
     let db_ok = state
         .db
-        .execute(Statement::from_string(DbBackend::Postgres, "SELECT 1".to_string()))
+        .execute(Statement::from_string(
+            DbBackend::Postgres,
+            "SELECT 1".to_string(),
+        ))
         .await
         .is_ok();
 

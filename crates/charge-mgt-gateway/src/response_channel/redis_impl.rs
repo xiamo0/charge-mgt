@@ -87,11 +87,7 @@ impl ResponseChannel for RedisResponseChannel {
                         "[REDIS] 等待超时: 键={}, 充电桩={}, 动作={}",
                         key, charge_point_id, action
                     );
-                    let call_error = CallError::new(
-                        &unique_id,
-                        "InternalError",
-                        "云平台响应超时",
-                    );
+                    let call_error = CallError::new(&unique_id, "InternalError", "云平台响应超时");
                     let json = serde_json::to_string(&call_error).unwrap_or_default();
                     response_tx.send(json).ok();
                 }

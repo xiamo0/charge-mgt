@@ -1,7 +1,21 @@
 use sea_orm::{DbErr, DeriveActiveEnum, EnumIter};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, serde::Serialize, serde::Deserialize)]
-#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "charge_mgt_connector_status")]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    EnumIter,
+    DeriveActiveEnum,
+    serde::Serialize,
+    serde::Deserialize,
+)]
+#[sea_orm(
+    rs_type = "String",
+    db_type = "Enum",
+    enum_name = "charge_mgt_connector_status"
+)]
 pub enum ConnectorStatus {
     #[sea_orm(string_value = "Available")]
     Available,

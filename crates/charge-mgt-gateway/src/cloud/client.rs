@@ -78,10 +78,7 @@ impl CloudApiClient {
         } else {
             let status = response.status();
             error!("设备注册失败: {} - {}", device_id, status);
-            Err(GatewayError::CloudApi(format!(
-                "设备注册失败: {}",
-                status
-            )))
+            Err(GatewayError::CloudApi(format!("设备注册失败: {}", status)))
         }
     }
 
