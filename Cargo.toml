@@ -7,7 +7,7 @@ members = [
     "crates/charge-mgt-cloud",
     "crates/charge-mgt-cloud/migration",
     "crates/charge-mgt-gateway",
-    "crates/charge-mgt-simulator",
+    "crates/charge-mgt-simulator", "crates/charge-mgt-common",
 ]
 
 [workspace.package]

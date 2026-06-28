@@ -5,7 +5,7 @@ use rdkafka::message::Message;
 use std::time::Duration;
 use tracing::{error, info, warn};
 
-use crate::ocpp::dispatcher::MessageDispatcher;
+use crate::ocpp16::dispatcher::MessageDispatcher;
 use crate::state::AppState;
 
 pub async fn spawn_kafka_consumer(state: AppState) -> anyhow::Result<()> {

@@ -551,6 +551,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "charge-mgt-common"
+version = "0.1.0"
+
+[[package]]
 name = "charge_mgt_cloud"
 version = "0.1.0"
 dependencies = [

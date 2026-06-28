@@ -36,60 +36,68 @@ OCPP 1.6J 基于 **JSON over WebSocket** 通信，每条消息都是一个请求
 
 ### 2.1 Core Profile（核心功能）
 
-| # | 请求 (CP→CS) | 响应 (CS→CP) | 说明 |
-|---|---|---|---|
-| 1 | `Authorize` | `Authorize.conf` | RFID 鉴权 |
-| 2 | `BootNotification` | `BootNotification.conf` | 启动注册 |
-| 3 | `Heartbeat` | `Heartbeat.conf` | 心跳保活 |
-| 4 | `StartTransaction` | `StartTransaction.conf` | 开始充电 |
-| 5 | `StopTransaction` | `StopTransaction.conf` | 结束充电 |
-| 6 | `MeterValues` | `MeterValues.conf` | 电能数据上报 |
-| 7 | `StatusNotification` | `StatusNotification.conf` | 状态变更 |
-| 8 | `RemoteStartTransaction` | `RemoteStartTransaction.conf` | 远程启动 |
-| 9 | `RemoteStopTransaction` | `RemoteStopTransaction.conf` | 远程停止 |
-| 10 | `ChangeAvailability` | `ChangeAvailability.conf` | 变更可用性 |
-| 11 | `ChangeConfiguration` | `ChangeConfiguration.conf` | 修改配置 |
-| 12 | `GetConfiguration` | `GetConfiguration.conf` | 查询配置 |
-| 13 | `ClearCache` | `ClearCache.conf` | 清除缓存 |
-| 14 | `UnlockConnector` | `UnlockConnector.conf` | 解锁连接器 |
-| 15 | `DataTransfer` | `DataTransfer.conf` | 厂商自定义传输 |
+
+| 报文名称 | 请求方向 | 说明 |
+| :--- | :---: | :--- |
+| Authorize | CP → CS | 用户刷卡鉴权请求 |
+| BootNotification | CP → CS | 充电桩启动注册 |
+| Heartbeat | CP → CS | 心跳保活 |
+| StartTransaction | CP → CS | 开始充电事务 |
+| StopTransaction | CP → CS | 结束充电事务 |
+| MeterValues | CP → CS | 上报电能采样数据 |
+| StatusNotification | CP → CS | 上报状态变更 |
+| RemoteStartTransaction | CS → CP | 远程启动充电 |
+| RemoteStopTransaction | CS → CP | 远程停止充电 |
+| ChangeAvailability | CS → CP | 变更可用性状态 |
+| ChangeConfiguration | CS → CP | 修改配置 |
+| GetConfiguration | CS → CP | 查询配置 |
+| ClearCache | CS → CP | 清除缓存 |
+| UnlockConnector | CS → CP | 解锁连接器 |
+| DataTransfer | 双向 | 厂商自定义数据传输 |
+
 
 ### 2.2 Firmware Management Profile（固件管理）
 
-| # | 请求 (CP→CS) | 响应 (CS→CP) | 说明 |
-|---|---|---|---|
-| 16 | `GetDiagnostics` | `GetDiagnostics.conf` | 获取诊断 |
-| 17 | `UpdateFirmware` | `UpdateFirmware.conf` | 更新固件 |
-| 18 | `DiagnosticsStatusNotification` | 无（单向） | 诊断状态 |
-| 19 | `FirmwareStatusNotification` | 无（单向） | 固件状态 |
+| 报文名称 | 请求方向 | 说明 |
+| :--- | :---: | :--- |
+| GetDiagnostics | CS → CP | 请求诊断信息 |
+| UpdateFirmware | CS → CP | 发起固件更新 |
+| DiagnosticsStatusNotification | CP → CS | 上报诊断上传状态（单向） |
+| FirmwareStatusNotification | CP → CS | 上报固件更新状态（单向） |
+
 
 ### 2.3 Reservation Profile（预约）
 
-| # | 请求 (CP→CS) | 响应 (CS→CP) | 说明 |
-|---|---|---|---|
-| 20 | `ReserveNow` | `ReserveNow.conf` | 预约 |
-| 21 | `CancelReservation` | `CancelReservation.conf` | 取消预约 |
+| 报文名称 | 请求方向 | 说明 |
+| :--- | :---: | :--- |
+| ReserveNow | CS → CP | 创建预约 |
+| CancelReservation | CS → CP | 取消预约 |
+
+
 
 ### 2.4 Local Auth List Management Profile（本地白名单）
 
-| # | 请求 (CP→CS) | 响应 (CS→CP) | 说明 |
-|---|---|---|---|
-| 22 | `SendLocalList` | `SendLocalList.conf` | 同步白名单 |
-| 23 | `GetLocalListVersion` | `GetLocalListVersion.conf` | 获取版本 |
+
+| 报文名称 | 请求方向 | 说明 |
+| :--- | :---: | :--- |
+| SendLocalList | CS → CP | 同步白名单 |
+| GetLocalListVersion | CS → CP | 查询白名单版本 |
+
 
 ### 2.5 Smart Charging Profile（智能充电）
 
-| # | 请求 (CP→CS) | 响应 (CS→CP) | 说明 |
-|---|---|---|---|
-| 24 | `SetChargingProfile` | `SetChargingProfile.conf` | 设置充电曲线 |
-| 25 | `ClearChargingProfile` | `ClearChargingProfile.conf` | 清除充电曲线 |
-| 26 | `GetCompositeSchedule` | `GetCompositeSchedule.conf` | 获取复合schedule |
+| 报文名称 | 请求方向 | 说明 |
+| :--- | :---: | :--- |
+| SetChargingProfile | CS → CP | 设置充电曲线 |
+| ClearChargingProfile | CS → CP | 清除充电曲线 |
+| GetCompositeSchedule | CS → CP | 获取复合充电计划 |
+
 
 ### 2.6 Remote Trigger Profile（远程触发）
 
-| # | 请求 (CP→CS) | 响应 (CS→CP) | 说明 |
-|---|---|---|---|
-| 27 | `TriggerMessage` | `TriggerMessage.conf` | 触发消息 |
+| 报文名称 | 请求方向 | 说明 |
+| :--- | :---: | :--- |
+| TriggerMessage | CS → CP | 触发特定消息上报 |
 
 ---
 

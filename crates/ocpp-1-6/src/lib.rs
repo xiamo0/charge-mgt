@@ -3,7 +3,7 @@
 mod common;
 mod messages;
 mod profiles;
-mod protocol;
+pub mod protocol;
 mod serialization;
 mod validation;
 

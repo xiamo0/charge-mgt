@@ -1,12 +1,14 @@
 use crate::entity::sent_messages;
-use crate::ocpp::envelope::CloudMessage;
-use crate::ocpp::error::HandlerError;
-use crate::ocpp::handlers::{boot_notification, heartbeat};
+use crate::ocpp16::envelope::CloudMessage;
+use crate::ocpp16::error::HandlerError;
+use crate::ocpp16::cp_request_handlers::{UnkonwnRequest, authorize, boot_notification, data_transfer,Handler, heartbeat,meter_values, start_transaction,status_notification,stop_transaction};
 use crate::state::AppState;
 use chrono::Local;
+use ocpp_1_6::calls::{AuthorizeRequest, BootNotificationRequest, HeartbeatRequest, StartTransactionRequest, StopTransactionRequest, MeterValuesRequest, StatusNotificationRequest, DataTransferRequest};
 use sea_orm::sea_query::Value;
 use sea_orm::{ConnectionTrait, DatabaseBackend, EntityTrait, Set, Statement, TryInsertResult};
 use tracing::{info, warn};
+use ocpp_1_6::protocol::{ACTION_AUTHORIZE, ACTION_BOOT_NOTIFICATION, ACTION_HEARTBEAT,ACTION_START_TRANSACTION,ACTION_STOP_TRANSACTION,ACTION_METER_VALUES,ACTION_STATUS_NOTIFICATION,ACTION_DATA_TRANSFER};
 
 pub struct MessageDispatcher {
     state: AppState,
@@ -32,7 +34,6 @@ impl MessageDispatcher {
             processed_at: Set(Local::now().with_timezone(Local::now().offset())),
         };
 
-
         let res = sent_messages::Entity::insert(new_message)
             .on_conflict_do_nothing()
             .exec(&self.state.db)
@@ -40,10 +41,8 @@ impl MessageDispatcher {
             .map_err(|e| DispatchError::Database(e.to_string()))?;
 
         match res {
-                TryInsertResult::Inserted(keys) => {
-                info!(
-                "新消息，开始处理{:?}",keys.last_insert_id
-                );
+            TryInsertResult::Inserted(keys) => {
+                info!("新消息，开始处理{:?}", keys.last_insert_id);
             }
             TryInsertResult::Conflicted => {
                 info!(
@@ -95,14 +94,16 @@ impl MessageDispatcher {
         msg: &CloudMessage,
     ) -> Result<serde_json::Value, HandlerError> {
         match msg.action.as_str() {
-            "BootNotification" => boot_notification::handle(state, msg).await,
-            "Heartbeat" => heartbeat::handle(state, msg).await,
-            other => {
-                warn!(action = %other, "不支持的 OCPP action");
-                Err(HandlerError::NotSupported(format!(
-                    "action '{other}' not implemented"
-                )))
-            }
+            ACTION_BOOT_NOTIFICATION => BootNotificationRequest::handle(state, msg).await,
+            ACTION_HEARTBEAT => HeartbeatRequest::handle(state, msg).await,
+            ACTION_AUTHORIZE => AuthorizeRequest::handle(state, msg).await,
+            ACTION_START_TRANSACTION => StartTransactionRequest::handle(state, msg).await,
+            ACTION_STOP_TRANSACTION=> StopTransactionRequest::handle(state, msg).await,
+            ACTION_METER_VALUES => MeterValuesRequest::handle(state, msg).await,
+            ACTION_STATUS_NOTIFICATION=> StatusNotificationRequest::handle(state, msg).await,
+            ACTION_DATA_TRANSFER => DataTransferRequest::handle(state, msg).await,
+
+                other => UnkonwnRequest::handle(state, msg).await,
         }
     }
 
