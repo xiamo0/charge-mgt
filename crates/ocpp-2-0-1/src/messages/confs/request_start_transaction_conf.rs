@@ -1,0 +1,33 @@
+//! RequestStartTransaction Confirmation
+
+use serde::{Deserialize, Serialize};
+use crate::common::{RequestStartStopStatusEnumType, StatusInfoType};
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RequestStartTransactionConfirmation {
+    pub status: RequestStartStopStatusEnumType,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub transaction_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status_info: Option<StatusInfoType>,
+}
+
+impl RequestStartTransactionConfirmation {
+    pub fn new(status: RequestStartStopStatusEnumType) -> Self {
+        Self {
+            status,
+            transaction_id: None,
+            status_info: None,
+        }
+    }
+
+    pub fn accepted() -> Self {
+        Self::new(RequestStartStopStatusEnumType::Accepted)
+    }
+
+    pub fn with_transaction_id(mut self, id: impl Into<String>) -> Self {
+        self.transaction_id = Some(id.into());
+        self
+    }
+}
