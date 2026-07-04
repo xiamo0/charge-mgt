@@ -1,6 +1,6 @@
 //! UnpublishFirmware Confirmation
-use serde::{Deserialize, Serialize};
 use crate::common::response_status::UnpublishFirmwareStatusEnumType;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

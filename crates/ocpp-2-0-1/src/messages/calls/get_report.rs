@@ -1,8 +1,8 @@
 //! GetReport Request (Functional Block B)
 //! 请求过滤配置报告
 
-use serde::{Deserialize, Serialize};
 use crate::common::{ComponentCriterionEnumType, ComponentVariableType};
+use serde::{Deserialize, Serialize};
 
 /// GetReport 请求
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

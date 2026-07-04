@@ -1,8 +1,8 @@
 //! GetCompositeSchedule Request (Functional Block A)
 //! 获取复合充电计划
 
-use serde::{Deserialize, Serialize};
 use crate::common::ChargingRateUnitEnumType;
+use serde::{Deserialize, Serialize};
 
 /// GetCompositeSchedule 请求
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

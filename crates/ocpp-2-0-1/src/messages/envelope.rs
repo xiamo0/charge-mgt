@@ -16,7 +16,11 @@ pub struct Call {
 impl Call {
     pub const MESSAGE_TYPE_ID: i32 = 2;
 
-    pub fn new(unique_id: impl Into<String>, action: impl Into<String>, payload: serde_json::Value) -> Self {
+    pub fn new(
+        unique_id: impl Into<String>,
+        action: impl Into<String>,
+        payload: serde_json::Value,
+    ) -> Self {
         Self {
             message_type_id: Self::MESSAGE_TYPE_ID,
             unique_id: unique_id.into(),

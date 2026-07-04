@@ -1,8 +1,8 @@
 //! TriggerMessage Request (Functional Block B)
 //! 触发充电桩发送特定消息
 
+use crate::common::EVSEType;
 use serde::{Deserialize, Serialize};
-use crate::common::{EVSEType};
 
 /// 消息触发类型枚举
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

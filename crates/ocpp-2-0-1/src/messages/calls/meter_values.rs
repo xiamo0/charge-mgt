@@ -1,8 +1,8 @@
 //! MeterValues Request (Functional Block J)
 //! 上报电能采样数据（事务外部的周期采样）
 
-use serde::{Deserialize, Serialize};
 use crate::common::MeterValueType;
+use serde::{Deserialize, Serialize};
 
 /// MeterValues 请求
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

@@ -247,8 +247,8 @@ mod tests {
 
     #[test]
     fn test_transaction_type() {
-        let trans = TransactionType::new("TX-001")
-            .with_charging_state(ChargingStateEnumType::Charging);
+        let trans =
+            TransactionType::new("TX-001").with_charging_state(ChargingStateEnumType::Charging);
         assert_eq!(trans.transaction_id, "TX-001");
         assert_eq!(trans.charging_state, Some(ChargingStateEnumType::Charging));
 

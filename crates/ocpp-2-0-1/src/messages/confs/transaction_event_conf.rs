@@ -1,7 +1,7 @@
 //! TransactionEvent Confirmation (Functional Block E)
 
-use serde::{Deserialize, Serialize};
 use crate::common::{IdTokenInfoType, MessageContentType};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

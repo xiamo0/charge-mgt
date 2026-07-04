@@ -1,8 +1,8 @@
 //! SetNetworkProfile Request (Functional Block B)
 //! 设置网络配置
 
-use serde::{Deserialize, Serialize};
 use crate::common::NetworkConnectionProfileType;
+use serde::{Deserialize, Serialize};
 
 /// SetNetworkProfile 请求
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

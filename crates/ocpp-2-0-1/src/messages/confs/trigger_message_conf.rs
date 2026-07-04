@@ -1,7 +1,7 @@
 //! TriggerMessage Confirmation
 
+use crate::common::{StatusInfoType, TriggerMessageStatusEnumType};
 use serde::{Deserialize, Serialize};
-use crate::common::{TriggerMessageStatusEnumType, StatusInfoType};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

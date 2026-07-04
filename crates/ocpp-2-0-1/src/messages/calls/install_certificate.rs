@@ -25,7 +25,10 @@ pub struct InstallCertificateRequest {
 }
 
 impl InstallCertificateRequest {
-    pub fn new(certificate_type: InstallCertificateUseEnumType, certificate: impl Into<String>) -> Self {
+    pub fn new(
+        certificate_type: InstallCertificateUseEnumType,
+        certificate: impl Into<String>,
+    ) -> Self {
         Self {
             certificate_type,
             certificate: certificate.into(),

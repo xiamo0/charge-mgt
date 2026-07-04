@@ -1,8 +1,8 @@
 //! NotifyDisplayMessages Request (Functional Block L)
 //! 上报已存储显示消息（分页）
 
-use serde::{Deserialize, Serialize};
 use super::set_display_message::MessageInfoType;
+use serde::{Deserialize, Serialize};
 
 /// NotifyDisplayMessages 请求
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

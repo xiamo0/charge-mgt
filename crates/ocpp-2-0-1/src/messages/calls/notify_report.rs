@@ -1,8 +1,8 @@
 //! NotifyReport Request (Functional Block B)
 //! 上报配置报告（分页）
 
-use serde::{Deserialize, Serialize};
 use crate::common::ReportDataType;
+use serde::{Deserialize, Serialize};
 
 /// NotifyReport 请求
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

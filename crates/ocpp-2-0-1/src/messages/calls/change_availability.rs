@@ -1,8 +1,8 @@
 //! ChangeAvailability Request (Functional Block F)
 //! 变更 EVSE 或连接器可用性
 
-use serde::{Deserialize, Serialize};
 use crate::common::{EVSEType, OperationalStatusEnumType};
+use serde::{Deserialize, Serialize};
 
 /// ChangeAvailability 请求
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

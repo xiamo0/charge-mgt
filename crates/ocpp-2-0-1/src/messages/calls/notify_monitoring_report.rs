@@ -1,8 +1,8 @@
 //! NotifyMonitoringReport Request (Functional Block D)
 //! 上报监控配置（分页）
 
-use serde::{Deserialize, Serialize};
 use crate::common::ComponentType;
+use serde::{Deserialize, Serialize};
 
 /// 监控数据类型
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

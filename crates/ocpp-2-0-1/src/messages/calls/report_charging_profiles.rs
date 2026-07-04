@@ -1,8 +1,8 @@
 //! ReportChargingProfiles Request (Functional Block A)
 //! 上报充电曲线（分页）
 
-use serde::{Deserialize, Serialize};
 use crate::common::ChargingProfileType;
+use serde::{Deserialize, Serialize};
 
 /// ReportChargingProfiles 请求
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

@@ -364,8 +364,7 @@ mod tests {
 
     #[test]
     fn test_charging_schedule_period() {
-        let period = ChargingSchedulePeriodType::new(0, 11000.0)
-            .with_number_phases(3);
+        let period = ChargingSchedulePeriodType::new(0, 11000.0).with_number_phases(3);
         let json = serde_json::to_string(&period).unwrap();
         let de: ChargingSchedulePeriodType = serde_json::from_str(&json).unwrap();
         assert_eq!(period, de);

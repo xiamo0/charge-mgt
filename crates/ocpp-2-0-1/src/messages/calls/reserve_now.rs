@@ -1,8 +1,8 @@
 //! ReserveNow Request (Functional Block H)
 //! 创建预约
 
+use crate::common::IdTokenType;
 use serde::{Deserialize, Serialize};
-use crate::common::{IdTokenType};
 
 /// 连接器类型枚举
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

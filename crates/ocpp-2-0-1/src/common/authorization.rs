@@ -1,7 +1,7 @@
 //! Authorization Types (Functional Block C)
 
-use serde::{Deserialize, Serialize};
 use crate::common::IdTokenInfoType;
+use serde::{Deserialize, Serialize};
 
 /// 本地授权数据
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -55,7 +55,7 @@ pub enum SendLocalListStatusEnumType {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::common::{IdTokenType, IdTokenEnumType};
+    use crate::common::{IdTokenEnumType, IdTokenType};
 
     #[test]
     fn test_authorization_data() {
@@ -78,10 +78,7 @@ mod tests {
 
     #[test]
     fn test_update_enum() {
-        let variants = [
-            UpdateEnumType::Differential,
-            UpdateEnumType::Full,
-        ];
+        let variants = [UpdateEnumType::Differential, UpdateEnumType::Full];
         for v in variants {
             let json = serde_json::to_string(&v).unwrap();
             let de: UpdateEnumType = serde_json::from_str(&json).unwrap();

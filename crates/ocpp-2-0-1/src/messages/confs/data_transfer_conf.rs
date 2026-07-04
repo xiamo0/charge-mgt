@@ -1,6 +1,6 @@
 //! DataTransfer Confirmation
-use serde::{Deserialize, Serialize};
 use crate::messages::calls::data_transfer::DataTransferStatusEnumType;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

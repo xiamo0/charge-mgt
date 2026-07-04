@@ -1,8 +1,8 @@
 //! GetMonitoringReport Request (Functional Block D)
 //! 请求监控配置报告
 
-use serde::{Deserialize, Serialize};
 use crate::common::ComponentVariableType;
+use serde::{Deserialize, Serialize};
 
 /// 监控标准枚举
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

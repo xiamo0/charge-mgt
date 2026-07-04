@@ -1,8 +1,8 @@
 //! Authorize Request (Functional Block C)
 //! 用户鉴权请求
 
-use serde::{Deserialize, Serialize};
 use crate::common::{IdTokenType, OCSPRequestDataType};
+use serde::{Deserialize, Serialize};
 
 /// Authorize 请求
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

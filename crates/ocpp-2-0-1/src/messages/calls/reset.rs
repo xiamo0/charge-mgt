@@ -1,8 +1,8 @@
 //! Reset Request (Functional Block B)
 //! 重启充电桩
 
-use serde::{Deserialize, Serialize};
 use crate::common::ResetEnumType;
+use serde::{Deserialize, Serialize};
 
 /// Reset 请求
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

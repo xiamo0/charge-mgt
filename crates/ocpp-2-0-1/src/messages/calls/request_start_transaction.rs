@@ -1,8 +1,8 @@
 //! RequestStartTransaction Request (Functional Block F)
 //! 远程启动充电
 
+use crate::common::{ChargingProfileType, IdTokenType};
 use serde::{Deserialize, Serialize};
-use crate::common::{IdTokenType, ChargingProfileType};
 
 /// RequestStartTransaction 请求
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

@@ -1,8 +1,8 @@
 //! BootNotification Request (Functional Block B)
 //! 充电桩启动时向云平台注册
 
-use serde::{Deserialize, Serialize};
 use crate::common::{BootReasonEnumType, ChargingStationType};
+use serde::{Deserialize, Serialize};
 
 /// BootNotification 请求
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

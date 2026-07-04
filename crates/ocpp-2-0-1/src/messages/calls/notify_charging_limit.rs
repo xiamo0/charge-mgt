@@ -38,7 +38,10 @@ impl NotifyChargingLimitRequest {
     }
 
     /// 添加充电曲线
-    pub fn with_charging_schedule(mut self, schedule: Vec<crate::common::ChargingScheduleType>) -> Self {
+    pub fn with_charging_schedule(
+        mut self,
+        schedule: Vec<crate::common::ChargingScheduleType>,
+    ) -> Self {
         self.charging_schedule = Some(schedule);
         self
     }

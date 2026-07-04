@@ -1,8 +1,8 @@
 //! SetVariableMonitoring Request (Functional Block D)
 //! 设置变量监控
 
-use serde::{Deserialize, Serialize};
 use crate::common::{ComponentType, VariableType};
+use serde::{Deserialize, Serialize};
 
 /// 监控标准枚举
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -48,7 +48,9 @@ pub struct SetVariableMonitoringRequest {
 
 impl SetVariableMonitoringRequest {
     pub fn new(set_monitoring_data: Vec<SetMonitoringDataType>) -> Self {
-        Self { set_monitoring_data }
+        Self {
+            set_monitoring_data,
+        }
     }
 }
 

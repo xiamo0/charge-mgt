@@ -1,8 +1,8 @@
 //! CustomerInformation Request (Functional Block G)
 //! 请求或清除客户数据（GDPR）
 
-use serde::{Deserialize, Serialize};
 use crate::common::IdTokenType;
+use serde::{Deserialize, Serialize};
 
 /// CustomerInformation 请求
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

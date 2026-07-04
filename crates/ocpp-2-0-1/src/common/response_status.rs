@@ -251,17 +251,82 @@ mod tests {
         };
     }
 
-    test_roundtrip_enum!(test_reserve_now_status, ReserveNowStatusEnumType, Accepted, Rejected);
-    test_roundtrip_enum!(test_cancel_reservation_status, CancelReservationStatusEnumType, Accepted, Rejected);
-    test_roundtrip_enum!(test_get_charging_profiles_status, GetChargingProfilesStatusEnumType, Accepted, NoProfiles);
-    test_roundtrip_enum!(test_generic_status, GenericStatusEnumType, Accepted, Rejected);
-    test_roundtrip_enum!(test_sign_certificate_status, SignCertificateStatusEnumType, Accepted, Rejected);
-    test_roundtrip_enum!(test_certificate_signed_status, CertificateSignedStatusEnumType, Accepted, Rejected);
-    test_roundtrip_enum!(test_install_certificate_status, InstallCertificateStatusEnumType, Accepted, Rejected);
-    test_roundtrip_enum!(test_delete_certificate_status, DeleteCertificateStatusEnumType, Accepted, NotFound);
-    test_roundtrip_enum!(test_get_installed_certificate_status, GetInstalledCertificateStatusEnumType, Accepted, NotFound);
-    test_roundtrip_enum!(test_display_message_status, DisplayMessageStatusEnumType, Accepted, Rejected);
-    test_roundtrip_enum!(test_clear_message_status, ClearMessageStatusEnumType, Accepted, Unknown);
-    test_roundtrip_enum!(test_customer_information_status, CustomerInformationStatusEnumType, Accepted, Rejected);
-    test_roundtrip_enum!(test_notify_ev_charging_needs_status, NotifyEVChargingNeedsStatusEnumType, Accepted, Rejected);
+    test_roundtrip_enum!(
+        test_reserve_now_status,
+        ReserveNowStatusEnumType,
+        Accepted,
+        Rejected
+    );
+    test_roundtrip_enum!(
+        test_cancel_reservation_status,
+        CancelReservationStatusEnumType,
+        Accepted,
+        Rejected
+    );
+    test_roundtrip_enum!(
+        test_get_charging_profiles_status,
+        GetChargingProfilesStatusEnumType,
+        Accepted,
+        NoProfiles
+    );
+    test_roundtrip_enum!(
+        test_generic_status,
+        GenericStatusEnumType,
+        Accepted,
+        Rejected
+    );
+    test_roundtrip_enum!(
+        test_sign_certificate_status,
+        SignCertificateStatusEnumType,
+        Accepted,
+        Rejected
+    );
+    test_roundtrip_enum!(
+        test_certificate_signed_status,
+        CertificateSignedStatusEnumType,
+        Accepted,
+        Rejected
+    );
+    test_roundtrip_enum!(
+        test_install_certificate_status,
+        InstallCertificateStatusEnumType,
+        Accepted,
+        Rejected
+    );
+    test_roundtrip_enum!(
+        test_delete_certificate_status,
+        DeleteCertificateStatusEnumType,
+        Accepted,
+        NotFound
+    );
+    test_roundtrip_enum!(
+        test_get_installed_certificate_status,
+        GetInstalledCertificateStatusEnumType,
+        Accepted,
+        NotFound
+    );
+    test_roundtrip_enum!(
+        test_display_message_status,
+        DisplayMessageStatusEnumType,
+        Accepted,
+        Rejected
+    );
+    test_roundtrip_enum!(
+        test_clear_message_status,
+        ClearMessageStatusEnumType,
+        Accepted,
+        Unknown
+    );
+    test_roundtrip_enum!(
+        test_customer_information_status,
+        CustomerInformationStatusEnumType,
+        Accepted,
+        Rejected
+    );
+    test_roundtrip_enum!(
+        test_notify_ev_charging_needs_status,
+        NotifyEVChargingNeedsStatusEnumType,
+        Accepted,
+        Rejected
+    );
 }

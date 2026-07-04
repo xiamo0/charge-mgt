@@ -1,8 +1,8 @@
 //! SetChargingProfile Request (Functional Block A)
 //! 设置充电曲线
 
-use serde::{Deserialize, Serialize};
 use crate::common::ChargingProfileType;
+use serde::{Deserialize, Serialize};
 
 /// SetChargingProfile 请求
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

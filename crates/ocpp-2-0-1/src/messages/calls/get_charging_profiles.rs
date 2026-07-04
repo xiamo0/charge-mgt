@@ -22,7 +22,8 @@ pub struct GetChargingProfilesRequest {
 pub struct GetChargingProfileCriterion {
     /// 充电曲线用途 (可选)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub charging_profile_purpose: Option<super::super::calls::set_charging_profile::SetChargingProfileRequest>,
+    pub charging_profile_purpose:
+        Option<super::super::calls::set_charging_profile::SetChargingProfileRequest>,
     /// 栈级别 (可选)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub stack_level: Option<i32>,

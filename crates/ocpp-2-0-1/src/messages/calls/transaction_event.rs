@@ -1,11 +1,11 @@
 //! TransactionEvent Request (Functional Block E)
 //! 事务生命周期事件（替代 OCPP 1.6 的 StartTransaction/StopTransaction）
 
-use serde::{Deserialize, Serialize};
 use crate::common::{
-    IdTokenType, EVSEType, MeterValueType, TransactionType,
-    TransactionEventEnumType, TriggerReasonEnumType,
+    EVSEType, IdTokenType, MeterValueType, TransactionEventEnumType, TransactionType,
+    TriggerReasonEnumType,
 };
+use serde::{Deserialize, Serialize};
 
 /// TransactionEvent 请求
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -69,10 +69,7 @@ impl TransactionEventRequest {
     }
 
     /// 创建事务开始事件
-    pub fn started(
-        timestamp: impl Into<String>,
-        transaction_info: TransactionType,
-    ) -> Self {
+    pub fn started(timestamp: impl Into<String>, transaction_info: TransactionType) -> Self {
         Self::new(
             TransactionEventEnumType::Started,
             timestamp,

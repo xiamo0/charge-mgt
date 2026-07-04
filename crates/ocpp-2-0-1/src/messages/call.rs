@@ -15,8 +15,5 @@ pub fn create_new_call<T: Serialize>(action: &str, payload: &T) -> Call {
 
 /// 创建一个新的 CallResult 消息
 pub fn create_new_call_result<T: Serialize>(unique_id: &str, payload: &T) -> CallResult {
-    CallResult::new(
-        unique_id,
-        serde_json::to_value(payload).unwrap_or_default(),
-    )
+    CallResult::new(unique_id, serde_json::to_value(payload).unwrap_or_default())
 }

@@ -1,8 +1,8 @@
 //! SetVariables Request (Functional Block B)
 //! 写入配置变量（替代 OCPP 1.6 的 ChangeConfiguration）
 
-use serde::{Deserialize, Serialize};
 use crate::common::SetVariableDataType;
+use serde::{Deserialize, Serialize};
 
 /// SetVariables 请求
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -14,9 +14,7 @@ pub struct SetVariablesRequest {
 
 impl SetVariablesRequest {
     pub fn new(set_variable_data: Vec<SetVariableDataType>) -> Self {
-        Self {
-            set_variable_data,
-        }
+        Self { set_variable_data }
     }
 }
 
@@ -29,13 +27,11 @@ mod tests {
 
     #[test]
     fn test_set_variables_request_serialization() {
-        let req = SetVariablesRequest::new(vec![
-            SetVariableDataType::new(
-                ComponentType::new("HeartbeatCtrlr"),
-                VariableType::new("Interval"),
-                "60",
-            ),
-        ]);
+        let req = SetVariablesRequest::new(vec![SetVariableDataType::new(
+            ComponentType::new("HeartbeatCtrlr"),
+            VariableType::new("Interval"),
+            "60",
+        )]);
         let json = serde_json::to_string(&req).unwrap();
         assert!(json.contains("setVariableData"));
         assert!(json.contains("HeartbeatCtrlr"));

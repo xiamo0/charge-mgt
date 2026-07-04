@@ -1,8 +1,8 @@
 //! ClearChargingProfile Request (Functional Block A)
 //! 清除充电曲线
 
-use serde::{Deserialize, Serialize};
 use crate::common::ChargingProfilePurposeEnumType;
+use serde::{Deserialize, Serialize};
 
 /// ClearChargingProfile 请求
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

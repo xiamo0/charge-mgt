@@ -1,8 +1,8 @@
 //! StatusNotification Request (Functional Block F)
 //! 上报 EVSE 上连接器的状态变化
 
-use serde::{Deserialize, Serialize};
 use crate::common::ConnectorStatusEnumType;
+use serde::{Deserialize, Serialize};
 
 /// StatusNotification 请求
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

@@ -1,9 +1,9 @@
 //! GetDisplayMessages Request (Functional Block L)
 //! 查询已存储显示消息
 
-use serde::{Deserialize, Serialize};
 use super::set_display_message::MessagePriorityEnumType;
 use super::set_display_message::MessageStateEnumType;
+use serde::{Deserialize, Serialize};
 
 /// GetDisplayMessages 请求
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

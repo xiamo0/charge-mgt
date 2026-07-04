@@ -1,8 +1,8 @@
 //! NotifyEvent Request (Functional Block D)
 //! 上报变量监控事件
 
-use serde::{Deserialize, Serialize};
 use crate::common::{ComponentType, VariableType};
+use serde::{Deserialize, Serialize};
 
 /// 事件触发类型
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -66,7 +66,11 @@ pub struct NotifyEventRequest {
 }
 
 impl NotifyEventRequest {
-    pub fn new(generated_at: impl Into<String>, seq_no: i32, event_data: Vec<EventDataType>) -> Self {
+    pub fn new(
+        generated_at: impl Into<String>,
+        seq_no: i32,
+        event_data: Vec<EventDataType>,
+    ) -> Self {
         Self {
             generated_at: generated_at.into(),
             seq_no,

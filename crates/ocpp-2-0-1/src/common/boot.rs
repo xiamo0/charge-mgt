@@ -199,8 +199,7 @@ mod tests {
 
     #[test]
     fn test_status_info_type() {
-        let info = StatusInfoType::new("ErrorCode")
-            .with_additional_info("Some additional info");
+        let info = StatusInfoType::new("ErrorCode").with_additional_info("Some additional info");
         let json = serde_json::to_string(&info).unwrap();
         let de: StatusInfoType = serde_json::from_str(&json).unwrap();
         assert_eq!(info, de);

@@ -1,8 +1,8 @@
 //! CertificateSigned Request (Functional Block J)
 //! 下发签名证书
 
-use serde::{Deserialize, Serialize};
 use super::sign_certificate::CertificateSigningUseEnumType;
+use serde::{Deserialize, Serialize};
 
 /// CertificateSigned 请求
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

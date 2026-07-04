@@ -1,8 +1,8 @@
 //! GetInstalledCertificateIds Request (Functional Block J)
 //! 查询已安装证书
 
-use serde::{Deserialize, Serialize};
 use super::install_certificate::InstallCertificateUseEnumType;
+use serde::{Deserialize, Serialize};
 
 /// GetInstalledCertificateIds 请求
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

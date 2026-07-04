@@ -27,7 +27,9 @@ pub struct DeleteCertificateRequest {
 
 impl DeleteCertificateRequest {
     pub fn new(certificate_hash_data: CertificateHashDataType) -> Self {
-        Self { certificate_hash_data }
+        Self {
+            certificate_hash_data,
+        }
     }
 }
 

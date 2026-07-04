@@ -1,8 +1,8 @@
 //! NotifyEVChargingSchedule Request (Functional Block B - ISO 15118)
 //! 转发 EV 充电计划
 
-use serde::{Deserialize, Serialize};
 use crate::common::ChargingScheduleType;
+use serde::{Deserialize, Serialize};
 
 /// NotifyEVChargingSchedule 请求
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -17,7 +17,11 @@ pub struct NotifyEVChargingScheduleRequest {
 }
 
 impl NotifyEVChargingScheduleRequest {
-    pub fn new(time_base: impl Into<String>, charging_schedule: ChargingScheduleType, evse_id: i32) -> Self {
+    pub fn new(
+        time_base: impl Into<String>,
+        charging_schedule: ChargingScheduleType,
+        evse_id: i32,
+    ) -> Self {
         Self {
             time_base: time_base.into(),
             charging_schedule,

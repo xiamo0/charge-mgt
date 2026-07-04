@@ -167,10 +167,7 @@ mod tests {
 
     #[test]
     fn test_reset_enum() {
-        let variants = [
-            ResetEnumType::Immediate,
-            ResetEnumType::OnIdle,
-        ];
+        let variants = [ResetEnumType::Immediate, ResetEnumType::OnIdle];
         for v in variants {
             let json = serde_json::to_string(&v).unwrap();
             let de: ResetEnumType = serde_json::from_str(&json).unwrap();

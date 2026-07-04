@@ -1,8 +1,8 @@
 //! GetCertificateStatus Request (Functional Block J)
 //! 查询证书 OCSP 状态
 
-use serde::{Deserialize, Serialize};
 use crate::common::OCSPRequestDataType;
+use serde::{Deserialize, Serialize};
 
 /// GetCertificateStatus 请求
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

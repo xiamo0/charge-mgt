@@ -1,7 +1,7 @@
 //! Authorize Confirmation (Functional Block C)
 
-use serde::{Deserialize, Serialize};
 use crate::common::{AuthorizeCertificateStatusEnumType, IdTokenInfoType};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

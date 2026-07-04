@@ -377,7 +377,10 @@ mod tests {
     #[test]
     fn test_sampled_value_energy() {
         let sv = SampledValueType::energy(15500.0);
-        assert_eq!(sv.measurand, Some(MeasurandEnumType::EnergyActiveImportRegister));
+        assert_eq!(
+            sv.measurand,
+            Some(MeasurandEnumType::EnergyActiveImportRegister)
+        );
         assert!(sv.unit_of_measure.is_some());
     }
 

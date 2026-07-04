@@ -1,8 +1,8 @@
 //! Component and Variable Types (Functional Block B - Provisioning)
 //! OCPP 2.0.1 使用 Component/Variable 模型替代 1.6 的 Key-Value 配置
 
-use serde::{Deserialize, Serialize};
 use crate::common::EVSEType;
+use serde::{Deserialize, Serialize};
 
 /// 组件类型
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -247,11 +247,7 @@ pub struct SetVariableDataType {
 
 impl SetVariableDataType {
     /// 创建新的设置变量数据
-    pub fn new(
-        component: ComponentType,
-        variable: VariableType,
-        value: impl Into<String>,
-    ) -> Self {
+    pub fn new(component: ComponentType, variable: VariableType, value: impl Into<String>) -> Self {
         Self {
             attribute_value: value.into(),
             component,

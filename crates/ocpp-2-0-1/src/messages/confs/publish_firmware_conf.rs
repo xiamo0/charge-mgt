@@ -1,6 +1,6 @@
 //! PublishFirmware Confirmation
-use serde::{Deserialize, Serialize};
 use crate::common::GenericDeviceModelStatusEnumType;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

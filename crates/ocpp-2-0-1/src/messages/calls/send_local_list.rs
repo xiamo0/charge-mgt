@@ -1,8 +1,8 @@
 //! SendLocalList Request (Functional Block C)
 //! 同步本地授权白名单
 
-use serde::{Deserialize, Serialize};
 use crate::common::{AuthorizationData, UpdateEnumType};
+use serde::{Deserialize, Serialize};
 
 /// SendLocalList 请求
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

@@ -1,8 +1,8 @@
 //! GetBaseReport Request (Functional Block B)
 //! 请求完整配置报告
 
-use serde::{Deserialize, Serialize};
 use crate::common::ReportBaseEnumType;
+use serde::{Deserialize, Serialize};
 
 /// GetBaseReport 请求
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

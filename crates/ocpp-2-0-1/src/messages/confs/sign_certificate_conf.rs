@@ -1,6 +1,6 @@
 //! SignCertificate Confirmation
-use serde::{Deserialize, Serialize};
 use crate::common::response_status::SignCertificateStatusEnumType;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

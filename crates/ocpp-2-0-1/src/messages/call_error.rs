@@ -1,13 +1,9 @@
 //! OCPP 2.0.1 CallError Factory Functions
 
-use crate::messages::envelope::{error_codes, CallError};
+use crate::messages::envelope::{CallError, error_codes};
 
 /// 创建一个新的 CallError 消息
-pub fn create_call_error(
-    unique_id: &str,
-    error_code: &str,
-    error_description: &str,
-) -> CallError {
+pub fn create_call_error(unique_id: &str, error_code: &str, error_description: &str) -> CallError {
     CallError::new(unique_id, error_code, error_description)
 }
 
