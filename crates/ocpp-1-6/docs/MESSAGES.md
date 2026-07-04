@@ -99,6 +99,12 @@ OCPP 1.6J 基于 **JSON over WebSocket** 通信，每条消息都是一个请求
 | :--- | :---: | :--- |
 | TriggerMessage | CS → CP | 触发特定消息上报 |
 
+
+
+| # | 请求 (CP→CS) | 响应 (CS→CP) | 说明 |
+|---|---|---|---|
+| 27 | `TriggerMessage` | `TriggerMessage.conf` | 触发消息 |
+
 ---
 
 ## 三、报文详细字段

@@ -64,10 +64,10 @@ impl DefaultHeartbeatHandler {
 }
 
 mod tests {
-    use crate::calls::HeartbeatRequest;
-    use crate::calls::HeartbeatConfig;
     use crate::calls::DefaultHeartbeatHandler;
+    use crate::calls::HeartbeatConfig;
     use crate::calls::HeartbeatHandler;
+    use crate::calls::HeartbeatRequest;
     use std::sync::Arc;
     #[test]
     fn test_heartbeat_request_roundtrip() {
