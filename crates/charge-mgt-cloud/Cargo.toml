@@ -13,11 +13,13 @@ path = "src/main.rs"
 tokio = { workspace = true }
 serde = { workspace = true }
 serde_json.workspace = true
+serde_repr.workspace = true
 axum.workspace = true
 thiserror = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 chrono = { workspace = true }
+rust_decimal.workspace = true
 
 # OCPP 消息结构（复用）
 ocpp_1_6 = { path = "../ocpp-1-6" }

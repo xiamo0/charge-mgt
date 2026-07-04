@@ -1,5 +1,4 @@
-use crate::entity::ChargePointColumn;
-use crate::entity::ChargePoints;
+use crate::entity::charge_point::{Column as ChargePointColumn, Entity as ChargePoints};
 use crate::ocpp16::cp_request_handlers::Handler;
 use crate::ocpp16::envelope::CloudMessage;
 use crate::ocpp16::error::HandlerError;
@@ -33,15 +32,17 @@ impl Handler<BootNotificationConfirmation> for BootNotificationRequest {
         let charge_box_serial_number = req.charge_box_serial_number.ok_or_else(|| {
             HandlerError::FormationViolation("charge_box_serial_number must not null".into())
         })?;
-        //判断表中是否有相同的 charge_point_serial_number 或 charge_box_serial_number
-        //如果没有 返回 Err(HandlerError::FormationViolation("charge_point_serial_number or charge_box_serial_number already exists".into()))
 
         ChargePoints::find()
             .filter(
-                ChargePointColumn::ChargeBoxSerial
+                ChargePointColumn::ChargeBoxSerialNumber
                     .eq(charge_box_serial_number.clone())
-                    .and(ChargePointColumn::SerialNumber.eq(charge_point_serial_number.clone())),
+                    .and(
+                        ChargePointColumn::ChargePointSerialNumber
+                            .eq(charge_point_serial_number.clone()),
+                    ),
             )
+            .filter(ChargePointColumn::IsDeleted.eq(0_i16))
             .one(&state.db)
             .await?
             .ok_or_else(|| {
@@ -79,15 +80,17 @@ pub async fn handle(
     let charge_box_serial_number = req.charge_box_serial_number.ok_or_else(|| {
         HandlerError::FormationViolation("charge_box_serial_number must not null".into())
     })?;
-    //判断表中是否有相同的 charge_point_serial_number 或 charge_box_serial_number
-    //如果没有 返回 Err(HandlerError::FormationViolation("charge_point_serial_number or charge_box_serial_number already exists".into()))
 
     ChargePoints::find()
         .filter(
-            ChargePointColumn::ChargeBoxSerial
+            ChargePointColumn::ChargeBoxSerialNumber
                 .eq(charge_box_serial_number.clone())
-                .and(ChargePointColumn::SerialNumber.eq(charge_point_serial_number.clone())),
+                .and(
+                    ChargePointColumn::ChargePointSerialNumber
+                        .eq(charge_point_serial_number.clone()),
+                ),
         )
+        .filter(ChargePointColumn::IsDeleted.eq(0_i16))
         .one(&state.db)
         .await?
         .ok_or_else(|| {

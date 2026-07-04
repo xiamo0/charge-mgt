@@ -1,20 +1,15 @@
-pub mod charge_points;
-pub mod connector_status;
-pub mod connectors;
+pub mod charge_connector;
+pub mod charge_point;
+pub mod charge_reservation;
+pub mod charge_transaction;
+pub mod enums;
+pub mod identity_info;
 pub mod sent_messages;
+pub mod smart_charge_profile;
 
-pub use charge_points::{
-    Column as ChargePointColumn, Entity as ChargePoints, Model as ChargePointModel,
-};
-
-pub use connectors::{
-    ActiveModel as ConnectorActiveModel, Column as ConnectorColumn, Entity as Connectors,
-    Model as ConnectorModel,
-};
-
-pub use sent_messages::{
-    ActiveModel as SentMessageActiveModel, Column as SentMessageColumn, Entity as SentMessages,
-    Model as SentMessageModel,
-};
-
-pub use connector_status::{ConnectorStatus, from_str_status};
+pub use charge_connector::Entity as ChargeConnectors;
+pub use charge_point::Entity as ChargePoints;
+pub use charge_reservation::Entity as ChargeReservations;
+pub use charge_transaction::Entity as ChargeTransactions;
+pub use identity_info::Entity as IdentityInfos;
+pub use smart_charge_profile::Entity as SmartChargeProfiles;

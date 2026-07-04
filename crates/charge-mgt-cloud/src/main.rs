@@ -11,6 +11,7 @@ use charge_mgt_cloud::config::AppConfig;
 use charge_mgt_cloud::infra::db;
 use charge_mgt_cloud::infra::kafka::consumer::spawn_kafka_consumer;
 use charge_mgt_cloud::infra::kafka::producer::KafkaProducer;
+use charge_mgt_cloud::router;
 use charge_mgt_cloud::state::AppState;
 
 fn parse_config_path() -> PathBuf {
@@ -69,7 +70,7 @@ async fn main() -> anyhow::Result<()> {
 
 fn build_router(state: AppState) -> Router {
     let state = Arc::new(state);
-    Router::new()
+    router::build()
         .route("/", get(root))
         .route("/health", get(health))
         .layer(Extension(state))
