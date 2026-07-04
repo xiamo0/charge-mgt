@@ -1,6 +1,6 @@
+use crate::ocpp16::cp_request_handlers::Handler;
 use crate::ocpp16::envelope::CloudMessage;
 use crate::ocpp16::error::HandlerError;
-use crate::ocpp16::cp_request_handlers::Handler;
 use crate::state::AppState;
 use ocpp_1_6::calls::DataTransferRequest;
 use ocpp_1_6::confs::DataTransferConfirmation;

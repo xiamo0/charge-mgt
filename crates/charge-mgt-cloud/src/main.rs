@@ -4,7 +4,7 @@ use std::sync::Arc;
 use axum::extract::Extension;
 use axum::response::Json;
 use axum::{Router, Server, routing::get};
-use sea_orm::{ConnectionTrait};
+use sea_orm::ConnectionTrait;
 use tracing::info;
 
 use charge_mgt_cloud::config::AppConfig;

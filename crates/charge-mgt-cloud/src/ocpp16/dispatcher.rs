@@ -1,14 +1,24 @@
 use crate::entity::sent_messages;
+use crate::ocpp16::cp_request_handlers::{
+    Handler, UnkonwnRequest, authorize, boot_notification, data_transfer, heartbeat, meter_values,
+    start_transaction, status_notification, stop_transaction,
+};
 use crate::ocpp16::envelope::CloudMessage;
 use crate::ocpp16::error::HandlerError;
-use crate::ocpp16::cp_request_handlers::{UnkonwnRequest, authorize, boot_notification, data_transfer,Handler, heartbeat,meter_values, start_transaction,status_notification,stop_transaction};
 use crate::state::AppState;
 use chrono::Local;
-use ocpp_1_6::calls::{AuthorizeRequest, BootNotificationRequest, HeartbeatRequest, StartTransactionRequest, StopTransactionRequest, MeterValuesRequest, StatusNotificationRequest, DataTransferRequest};
+use ocpp_1_6::calls::{
+    AuthorizeRequest, BootNotificationRequest, DataTransferRequest, HeartbeatRequest,
+    MeterValuesRequest, StartTransactionRequest, StatusNotificationRequest, StopTransactionRequest,
+};
+use ocpp_1_6::protocol::{
+    ACTION_AUTHORIZE, ACTION_BOOT_NOTIFICATION, ACTION_DATA_TRANSFER, ACTION_HEARTBEAT,
+    ACTION_METER_VALUES, ACTION_START_TRANSACTION, ACTION_STATUS_NOTIFICATION,
+    ACTION_STOP_TRANSACTION,
+};
 use sea_orm::sea_query::Value;
 use sea_orm::{ConnectionTrait, DatabaseBackend, EntityTrait, Set, Statement, TryInsertResult};
 use tracing::{info, warn};
-use ocpp_1_6::protocol::{ACTION_AUTHORIZE, ACTION_BOOT_NOTIFICATION, ACTION_HEARTBEAT,ACTION_START_TRANSACTION,ACTION_STOP_TRANSACTION,ACTION_METER_VALUES,ACTION_STATUS_NOTIFICATION,ACTION_DATA_TRANSFER};
 
 pub struct MessageDispatcher {
     state: AppState,
@@ -98,12 +108,12 @@ impl MessageDispatcher {
             ACTION_HEARTBEAT => HeartbeatRequest::handle(state, msg).await,
             ACTION_AUTHORIZE => AuthorizeRequest::handle(state, msg).await,
             ACTION_START_TRANSACTION => StartTransactionRequest::handle(state, msg).await,
-            ACTION_STOP_TRANSACTION=> StopTransactionRequest::handle(state, msg).await,
+            ACTION_STOP_TRANSACTION => StopTransactionRequest::handle(state, msg).await,
             ACTION_METER_VALUES => MeterValuesRequest::handle(state, msg).await,
-            ACTION_STATUS_NOTIFICATION=> StatusNotificationRequest::handle(state, msg).await,
+            ACTION_STATUS_NOTIFICATION => StatusNotificationRequest::handle(state, msg).await,
             ACTION_DATA_TRANSFER => DataTransferRequest::handle(state, msg).await,
 
-                other => UnkonwnRequest::handle(state, msg).await,
+            other => UnkonwnRequest::handle(state, msg).await,
         }
     }
 

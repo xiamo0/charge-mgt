@@ -1,7 +1,6 @@
-
-use crate::ocpp16::cp_request_handlers::Handler;
 use crate::entity::ChargePointColumn;
 use crate::entity::ChargePoints;
+use crate::ocpp16::cp_request_handlers::Handler;
 use crate::ocpp16::envelope::CloudMessage;
 use crate::ocpp16::error::HandlerError;
 use crate::state::AppState;
@@ -9,7 +8,6 @@ use chrono::Utc;
 use ocpp_1_6::calls::BootNotificationRequest;
 use ocpp_1_6::confs::BootNotificationConfirmation;
 use sea_orm::*;
-
 
 impl Handler<BootNotificationConfirmation> for BootNotificationRequest {
     async fn handel_detail(
