@@ -1,3 +1,9 @@
+//! 身份标签业务逻辑。
+//!
+//! **删除语义**：业务上 DELETE 不物理删除，而是将 `status` 置为
+//! [`IdentityStatus::Blocked`]（挂失），由 [`to_blocked_status`] 实现。
+//! 这与 [`crate::service::charge_point::soft_delete`] 的 `is_deleted` 标志不同。
+
 use chrono::Local;
 use sea_orm::*;
 
@@ -9,6 +15,9 @@ use crate::entity::enums::IdentityStatus;
 use crate::entity::identity_info::{ActiveModel, Column, Entity, Model};
 use crate::error::AppError;
 
+/// 列表分页查询；可选过滤 `user_id` / `tag_type` / `status`。
+///
+/// **错误**：`Db`。
 pub async fn list(
     db: &DatabaseConnection,
     q: IdentityListQuery,
@@ -35,6 +44,9 @@ pub async fn list(
     })
 }
 
+/// 按主键 `id` 取详情。
+///
+/// **错误**：`NotFound` / `Db`。
 pub async fn get(db: &DatabaseConnection, id: i64) -> Result<Model, AppError> {
     Entity::find_by_id(id)
         .one(db)
@@ -42,6 +54,11 @@ pub async fn get(db: &DatabaseConnection, id: i64) -> Result<Model, AppError> {
         .ok_or_else(|| AppError::not_found(format!("identity {id}")))
 }
 
+/// 按 `tag_id`（UNIQUE 索引列）查。
+///
+/// 主要用于 OCPP Authorize 流程（外部以 tag_id 而非自增 id 查询）。
+///
+/// **错误**：`NotFound` / `Db`。
 pub async fn get_by_tag(db: &DatabaseConnection, tag_id: &str) -> Result<Model, AppError> {
     Entity::find()
         .filter(Column::TagId.eq(tag_id.to_owned()))
@@ -50,6 +67,11 @@ pub async fn get_by_tag(db: &DatabaseConnection, tag_id: &str) -> Result<Model, 
         .ok_or_else(|| AppError::not_found(format!("identity with tag {tag_id}")))
 }
 
+/// 创建标签。
+///
+/// **错误**：
+/// * `Conflict`：`tag_id` 已存在
+/// * `Db`：DB 错误
 pub async fn create(db: &DatabaseConnection, req: CreateIdentity) -> Result<Model, AppError> {
     if Entity::find()
         .filter(Column::TagId.eq(req.tag_id.clone()))
@@ -76,6 +98,9 @@ pub async fn create(db: &DatabaseConnection, req: CreateIdentity) -> Result<Mode
     Ok(model.insert(db).await?)
 }
 
+/// 部分更新；自动刷新 `update_time`。
+///
+/// **错误**：`NotFound` / `Db`。
 pub async fn update(
     db: &DatabaseConnection,
     id: i64,
@@ -99,6 +124,12 @@ pub async fn update(
     Ok(active.update(db).await?)
 }
 
+/// 把身份状态置为 [`IdentityStatus::Blocked`]（挂失）。
+///
+/// **注意**：这是 DELETE HTTP 端点的实现，等价于"软删除"，**不**物理删除。
+/// 保留所有审计轨迹。
+///
+/// **错误**：`NotFound` / `Db`。
 pub async fn to_blocked_status(db: &DatabaseConnection, id: i64) -> Result<(), AppError> {
     let existing = get(db, id).await?;
     let mut active: ActiveModel = existing.into();
@@ -108,6 +139,12 @@ pub async fn to_blocked_status(db: &DatabaseConnection, id: i64) -> Result<(), A
     Ok(())
 }
 
+/// 重新激活（Blocked → Accepted）。
+///
+/// **前置条件**：当前状态不能是 [`IdentityStatus::Expired`]，否则返回 400
+/// （过期标签需要走续期流程，不是简单 activate）。
+///
+/// **错误**：`NotFound` / `BadRequest` / `Db`。
 pub async fn activate(db: &DatabaseConnection, id: i64) -> Result<Model, AppError> {
     let existing = get(db, id).await?;
     if existing.status == IdentityStatus::Expired {

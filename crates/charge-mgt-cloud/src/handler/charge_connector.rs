@@ -1,3 +1,5 @@
+//! `GET/PATCH /api/v1/charge-points/:pid/connectors[/...]` handler。
+
 use std::sync::Arc;
 
 use axum::extract::{Extension, Json, Path, Query};
@@ -9,6 +11,7 @@ use crate::error::AppError;
 use crate::service::charge_connector as svc;
 use crate::state::AppState;
 
+/// `GET /api/v1/connectors` — 全局充电枪列表（不分桩）。
 pub async fn list(
     Extension(state): Extension<Arc<AppState>>,
     Query(q): Query<ChargeConnectorListQuery>,
@@ -17,6 +20,8 @@ pub async fn list(
     Ok(Json(ApiResponse::ok(data)))
 }
 
+/// `GET /api/v1/charge-points/:charge_point_id/connectors` — 嵌套端点，
+/// 自动把 path 里的 `charge_point_id` 注入 list query。
 pub async fn nested_list(
     Extension(state): Extension<Arc<AppState>>,
     Path(charge_point_id): Path<String>,
@@ -29,6 +34,7 @@ pub async fn nested_list(
     Ok(Json(ApiResponse::ok(data)))
 }
 
+/// `GET /api/v1/charge-points/:charge_point_id/connectors/:connector_id`
 pub async fn get(
     Extension(state): Extension<Arc<AppState>>,
     Path((pid, cid)): Path<(String, String)>,
@@ -37,6 +43,7 @@ pub async fn get(
     Ok(Json(ApiResponse::ok(data)))
 }
 
+/// `PATCH /api/v1/charge-points/:charge_point_id/connectors/:connector_id`
 pub async fn update(
     Extension(state): Extension<Arc<AppState>>,
     Path((pid, cid)): Path<(String, String)>,

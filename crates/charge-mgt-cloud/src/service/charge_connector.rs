@@ -1,3 +1,8 @@
+//! 充电枪业务逻辑。
+//!
+//! 注意：**无** create / soft_delete / restore — 枪由 OCPP StatusNotification
+//! 触发创建，HTTP 入口不开放。
+
 use chrono::Local;
 use sea_orm::*;
 
@@ -8,6 +13,9 @@ use crate::dto::common::PageResult;
 use crate::entity::charge_connector::{ActiveModel, Column, Entity, Model};
 use crate::error::AppError;
 
+/// 列表分页查询，按 `charge_point_id` / `status` 可选过滤。
+///
+/// **错误**：`Db`。
 pub async fn list(
     db: &DatabaseConnection,
     q: ChargeConnectorListQuery,
@@ -31,6 +39,9 @@ pub async fn list(
     })
 }
 
+/// 按复合主键 `(charge_point_id, connector_id)` 取详情。
+///
+/// **错误**：`NotFound` / `Db`。
 pub async fn get(
     db: &DatabaseConnection,
     charge_point_id: &str,
@@ -46,6 +57,9 @@ pub async fn get(
         })
 }
 
+/// 部分更新；自动刷新 `update_time`。
+///
+/// **错误**：`NotFound` / `Db`。
 pub async fn update(
     db: &DatabaseConnection,
     charge_point_id: &str,

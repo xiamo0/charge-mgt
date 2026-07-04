@@ -1,3 +1,5 @@
+//! 智能充电策略业务逻辑。
+
 use chrono::Local;
 use sea_orm::*;
 
@@ -8,6 +10,10 @@ use crate::dto::smart_charge_profile::{
 use crate::entity::smart_charge_profile::{ActiveModel, Column, Entity, Model};
 use crate::error::AppError;
 
+/// 列表分页查询，可选过滤 `charge_point_id` / `connector_id` /
+/// `charging_profile_purpose` / `status`。
+///
+/// **错误**：`Db`。
 pub async fn list(
     db: &DatabaseConnection,
     q: ProfileListQuery,
@@ -37,6 +43,9 @@ pub async fn list(
     })
 }
 
+/// 按主键 `id` 取详情。
+///
+/// **错误**：`NotFound` / `Db`。
 pub async fn get(db: &DatabaseConnection, id: i64) -> Result<Model, AppError> {
     Entity::find_by_id(id)
         .one(db)
@@ -44,6 +53,11 @@ pub async fn get(db: &DatabaseConnection, id: i64) -> Result<Model, AppError> {
         .ok_or_else(|| AppError::not_found(format!("profile {id}")))
 }
 
+/// 按 `charge_point_id` 列出该桩下所有策略（**不**分页）。
+///
+/// 供嵌套端点 `GET /api/v1/charge-points/:pid/charging-profiles` 使用。
+///
+/// **错误**：`Db`。
 pub async fn list_by_charge_point(
     db: &DatabaseConnection,
     charge_point_id: &str,
@@ -55,6 +69,12 @@ pub async fn list_by_charge_point(
     Ok(items)
 }
 
+/// 创建策略。
+///
+/// **副作用**：DB INSERT 后会触发 OCPP `SetChargingProfile` 下发（由 caller
+/// 负责）；本函数只写 DB，下发逻辑不在 service 层。
+///
+/// **错误**：`Db`。
 pub async fn create(db: &DatabaseConnection, req: CreateProfile) -> Result<Model, AppError> {
     let now = Local::now().naive_local();
     let model = ActiveModel {
@@ -76,6 +96,12 @@ pub async fn create(db: &DatabaseConnection, req: CreateProfile) -> Result<Model
     Ok(model.insert(db).await?)
 }
 
+/// 物理删除策略。
+///
+/// **副作用**：DB DELETE 后会触发 OCPP `ClearChargingProfile` 下发（由 caller
+/// 负责）。本函数只删 DB 行，0 行影响视为 NotFound。
+///
+/// **错误**：`NotFound` / `Db`。
 pub async fn delete(db: &DatabaseConnection, id: i64) -> Result<(), AppError> {
     let result = Entity::delete_by_id(id).exec(db).await?;
     if result.rows_affected == 0 {

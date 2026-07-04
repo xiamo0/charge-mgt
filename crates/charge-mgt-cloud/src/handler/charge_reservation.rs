@@ -1,3 +1,5 @@
+//! `GET/POST/PATCH /api/v1/reservations[/...]` handler。
+
 use std::sync::Arc;
 
 use axum::extract::{Extension, Json, Path, Query};
@@ -11,6 +13,7 @@ use crate::error::AppError;
 use crate::service::reservation as svc;
 use crate::state::AppState;
 
+/// `GET /api/v1/reservations`
 pub async fn list(
     Extension(state): Extension<Arc<AppState>>,
     Query(q): Query<ReservationListQuery>,
@@ -19,6 +22,7 @@ pub async fn list(
     Ok(Json(ApiResponse::ok(data)))
 }
 
+/// `GET /api/v1/reservations/:id`
 pub async fn get(
     Extension(state): Extension<Arc<AppState>>,
     Path(id): Path<i64>,
@@ -27,6 +31,7 @@ pub async fn get(
     Ok(Json(ApiResponse::ok(data)))
 }
 
+/// `POST /api/v1/reservations`
 pub async fn create(
     Extension(state): Extension<Arc<AppState>>,
     Json(req): Json<CreateReservation>,
@@ -35,6 +40,7 @@ pub async fn create(
     Ok(Json(ApiResponse::ok(data)))
 }
 
+/// `PATCH /api/v1/reservations/:id` — 仅 `status == Pending` 时允许。
 pub async fn update(
     Extension(state): Extension<Arc<AppState>>,
     Path(id): Path<i64>,
@@ -44,6 +50,7 @@ pub async fn update(
     Ok(Json(ApiResponse::ok(data)))
 }
 
+/// `POST /api/v1/reservations/:id/cancel` — 仅 `status == Pending` 时允许。
 pub async fn cancel(
     Extension(state): Extension<Arc<AppState>>,
     Path(id): Path<i64>,

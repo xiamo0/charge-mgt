@@ -3,7 +3,7 @@
 //! 把数据库列上的枚举值（状态、类型标识）用 Rust enum 表达，避免裸 `i16` / `String`
 //! 散落在业务层。本模块按 **DB 列数据类型** 分两类：
 //!
-//! * **`SMALLINT` 列**：使用 [`impl_i16_enum!`] 宏一次性展开 `sea-orm` 所需的全套 trait
+//! * **`SMALLINT` 列**：使用 `impl_i16_enum!` 宏一次性展开 `sea-orm` 所需的全套 trait
 //!   （`From<T> for Value` / `Nullable` / `ValueType` / `TryGetable`），
 //!   并配合 [`serde_repr`] 让 JSON 序列化输出仍为整数。
 //! * **`VARCHAR` 列**：保持 `String` 字段存储，枚举仅用于业务层的类型化映射

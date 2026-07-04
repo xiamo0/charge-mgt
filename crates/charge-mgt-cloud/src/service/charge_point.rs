@@ -1,3 +1,5 @@
+//! 充电桩业务逻辑。
+
 use chrono::Local;
 use sea_orm::*;
 
@@ -8,6 +10,13 @@ use crate::entity::charge_point::{ActiveModel, Column, Entity, Model};
 use crate::error::AppError;
 use crate::dto::common::PageResult;
 
+/// 列表分页查询。
+///
+/// 筛选逻辑：
+/// * `station_id` / `status` 可选
+/// * `include_deleted == false`（默认）时过滤 `is_deleted = 0`
+///
+/// **错误**：`Db`（DB 错误）。
 pub async fn list(
     db: &DatabaseConnection,
     q: ChargePointListQuery,
@@ -35,6 +44,9 @@ pub async fn list(
     })
 }
 
+/// 按 `charge_point_id` 取详情，**不**过滤软删除。
+///
+/// **错误**：`NotFound`（不存在） / `Db`。
 pub async fn get(db: &DatabaseConnection, id: &str) -> Result<Model, AppError> {
     Entity::find_by_id(id.to_owned())
         .one(db)
@@ -42,10 +54,19 @@ pub async fn get(db: &DatabaseConnection, id: &str) -> Result<Model, AppError> {
         .ok_or_else(|| AppError::not_found(format!("charge point {id}")))
 }
 
+/// 创建充电桩。
+///
+/// **副作用**：自动写入 `is_deleted = 0` / `create_time` / `update_time`。
+///
+/// **错误**：
+/// * `Conflict`：`charge_point_id` 已存在
+/// * `Db`：DB 错误
 pub async fn create(
     db: &DatabaseConnection,
     req: CreateChargePoint,
 ) -> Result<Model, AppError> {
+    // 业务级唯一性校验（DB 没有 UNIQUE 索引，依赖 charge_point_id 作为主键
+    // 已经隐式保证）；此处显式查一次，返回 409 而非依赖 sea-orm 的 DbErr
     if Entity::find_by_id(req.charge_point_id.clone())
         .one(db)
         .await?
@@ -80,6 +101,11 @@ pub async fn create(
     Ok(res)
 }
 
+/// 部分更新（PATCH）。
+///
+/// `Option` 为 `None` 的字段**保持原值不变**；自动刷新 `update_time`。
+///
+/// **错误**：`NotFound` / `Db`。
 pub async fn update(
     db: &DatabaseConnection,
     id: &str,
@@ -130,6 +156,9 @@ pub async fn update(
     Ok(active.update(db).await?)
 }
 
+/// 软删除：置 `is_deleted = 1`，**不**物理删除。
+///
+/// **错误**：`NotFound` / `Db`。
 pub async fn soft_delete(db: &DatabaseConnection, id: &str) -> Result<(), AppError> {
     let existing = get(db, id).await?;
     let mut active: ActiveModel = existing.into();
@@ -139,6 +168,11 @@ pub async fn soft_delete(db: &DatabaseConnection, id: &str) -> Result<(), AppErr
     Ok(())
 }
 
+/// 恢复软删除：置 `is_deleted = 0`。
+///
+/// 即使记录当前不是软删除状态，调用也成功（幂等）。
+///
+/// **错误**：`NotFound` / `Db`。
 pub async fn restore(db: &DatabaseConnection, id: &str) -> Result<Model, AppError> {
     let existing = Entity::find_by_id(id.to_owned())
         .one(db)

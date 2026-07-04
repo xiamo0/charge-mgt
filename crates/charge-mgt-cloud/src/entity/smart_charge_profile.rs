@@ -1,4 +1,8 @@
 //! 智能充电策略 entity（对应 `smart_charge_profile_ocpp16` 表）。
+//!
+//! 记录平台下发的 OCPP `SetChargingProfile` / `ClearChargingProfile` 指令。
+//! 注意 `charging_profile_id`（桩端生成）**不是**本表主键；DB 主键是平台侧自增 `id`。
+//! 删除策略时同时下发 OCPP ClearChargingProfile 由 service 层承担。
 
 use rust_decimal::Decimal;
 use sea_orm::entity::prelude::*;
@@ -9,14 +13,16 @@ use super::enums::ProfileDeliveryStatus;
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
 #[sea_orm(table_name = "smart_charge_profile_ocpp16")]
 pub struct Model {
+    /// 平台侧主键（自增）
     #[sea_orm(primary_key)]
     pub id: i64,
+    /// 目标充电桩唯一标识
     pub charge_point_id: String,
-    /// 充电枪编号；空 / "0" 代表整个桩
+    /// 充电枪编号；`None` 或 `"0"` 代表整个桩
     pub connector_id: Option<String>,
     /// 桩端生成的 Profile 唯一 ID（非本表主键）
     pub charging_profile_id: i32,
-    /// 策略优先级（数字越大越高）
+    /// 策略优先级（数字越大越高；OCPP 协议规定）
     pub stack_level: i16,
     /// 策略目的：ChargePointMaxProfile / TxDefaultProfile / TxProfile
     pub charging_profile_purpose: String,
@@ -36,8 +42,10 @@ pub struct Model {
     /// 下发状态：0 待下发、1 已接受、2 已拒绝
     #[sea_orm(column_type = "SmallInteger")]
     pub status: ProfileDeliveryStatus,
+    /// 记录创建时间
     #[sea_orm(column_type = "Timestamp")]
     pub create_time: DateTime,
+    /// 记录更新时间
     #[sea_orm(column_type = "Timestamp")]
     pub update_time: DateTime,
 }

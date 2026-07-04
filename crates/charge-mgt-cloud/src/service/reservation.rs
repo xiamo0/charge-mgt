@@ -1,3 +1,9 @@
+//! 充电预约业务逻辑。
+//!
+//! **状态机约束**：`update` / `cancel` 仅允许在 `status == Pending` 时调用。
+//! 离开 Pending 状态后预约不可再改回（强约束保护 OCPP ReserveNow 协议的
+//! 一旦生效不可撤销语义）。
+
 use chrono::Local;
 use sea_orm::*;
 
@@ -10,6 +16,9 @@ use crate::entity::charge_reservation::{ActiveModel, Column, Entity, Model};
 use crate::entity::enums::ReservationStatus;
 use crate::error::AppError;
 
+/// 列表分页查询，可选过滤 `user_id` / `charge_point_id` / `status`。
+///
+/// **错误**：`Db`。
 pub async fn list(
     db: &DatabaseConnection,
     q: ReservationListQuery,
@@ -36,6 +45,9 @@ pub async fn list(
     })
 }
 
+/// 按主键 `reservation_id` 取详情。
+///
+/// **错误**：`NotFound` / `Db`。
 pub async fn get(db: &DatabaseConnection, id: i64) -> Result<Model, AppError> {
     Entity::find_by_id(id)
         .one(db)
@@ -43,6 +55,9 @@ pub async fn get(db: &DatabaseConnection, id: i64) -> Result<Model, AppError> {
         .ok_or_else(|| AppError::not_found(format!("reservation {id}")))
 }
 
+/// 创建预约，初始状态为 [`ReservationStatus::Pending`]。
+///
+/// **错误**：`BadRequest`（`end_time <= start_time`） / `Db`。
 pub async fn create(
     db: &DatabaseConnection,
     req: CreateReservation,
@@ -68,6 +83,9 @@ pub async fn create(
     Ok(model.insert(db).await?)
 }
 
+/// 部分更新；仅 `status == Pending` 时允许。
+///
+/// **错误**：`NotFound` / `BadRequest`（非 Pending 状态）/ `Db`。
 pub async fn update(
     db: &DatabaseConnection,
     id: i64,
@@ -94,6 +112,9 @@ pub async fn update(
     Ok(active.update(db).await?)
 }
 
+/// 取消预约；仅 `status == Pending` 时允许，置为 [`ReservationStatus::Cancelled`]。
+///
+/// **错误**：`NotFound` / `BadRequest`（非 Pending 状态） / `Db`。
 pub async fn cancel(
     db: &DatabaseConnection,
     id: i64,

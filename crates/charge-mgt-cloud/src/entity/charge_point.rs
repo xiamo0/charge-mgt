@@ -1,4 +1,8 @@
 //! 充电桩设备 entity（对应 `charge_point_ocpp16` 表）。
+//!
+//! 桩的"主实体"，OCPP BootNotification / Heartbeat / StatusNotification 都围绕它操作。
+//! `is_deleted` 是软删除标志：列表查询默认过滤已软删（参见
+//! [`crate::service::charge_point::list`]）。
 
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -11,16 +15,23 @@ pub struct Model {
     pub charge_point_id: String,
     /// 所属充电站 ID
     pub station_id: i64,
+    /// 厂商名称（OCPP `chargePointVendor`）
     pub charge_point_vendor: Option<String>,
+    /// 型号（OCPP `chargePointModel`）
     pub charge_point_model: Option<String>,
+    /// 充电盒序列号（OCPP `chargeBoxSerialNumber`）
     pub charge_box_serial_number: Option<String>,
+    /// 充电桩序列号（OCPP `chargePointSerialNumber`）
     pub charge_point_serial_number: Option<String>,
+    /// 固件版本
     pub firmware_version: Option<String>,
     /// SIM 卡 ICCID
     pub iccid: Option<String>,
     /// SIM 卡 IMSI
     pub imsi: Option<String>,
+    /// 电能表型号
     pub meter_type: Option<String>,
+    /// 电能表序列号
     pub meter_serial_number: Option<String>,
     /// OCPP ChargePointStatus 枚举字符串（VARCHAR 64）
     pub status: String,
@@ -31,8 +42,10 @@ pub struct Model {
     pub install_date: Option<Date>,
     /// 逻辑删除：0 正常，1 已删除
     pub is_deleted: i16,
+    /// 记录创建时间（由 service 层 `Local::now()` 写入）
     #[sea_orm(column_type = "Timestamp")]
     pub create_time: DateTime,
+    /// 记录更新时间（每次 service 层修改后由 `Local::now()` 写入）
     #[sea_orm(column_type = "Timestamp")]
     pub update_time: DateTime,
 }

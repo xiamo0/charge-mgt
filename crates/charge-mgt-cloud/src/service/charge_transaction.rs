@@ -1,3 +1,7 @@
+//! 充电事务业务逻辑。
+//!
+//! **HTTP 入口不开放创建** — 事务由 OCPP StartTransaction 创建。
+
 use chrono::Local;
 use sea_orm::*;
 
@@ -9,6 +13,12 @@ use crate::entity::charge_transaction::{ActiveModel, Column, Entity, Model};
 use crate::entity::enums::PaymentStatus;
 use crate::error::AppError;
 
+/// 列表分页查询，结果按 `start_time` 倒序。
+///
+/// 筛选条件可选：`user_id` / `charge_point_id` / `status` / `payment_status`
+/// / `start_time_from` / `start_time_to` / `include_offline_sync`。
+///
+/// **错误**：`Db`。
 pub async fn list(
     db: &DatabaseConnection,
     q: TransactionListQuery,
@@ -47,6 +57,9 @@ pub async fn list(
     })
 }
 
+/// 按主键 `id` 取详情。
+///
+/// **错误**：`NotFound` / `Db`。
 pub async fn get(db: &DatabaseConnection, id: i64) -> Result<Model, AppError> {
     Entity::find_by_id(id)
         .one(db)
@@ -54,6 +67,11 @@ pub async fn get(db: &DatabaseConnection, id: i64) -> Result<Model, AppError> {
         .ok_or_else(|| AppError::not_found(format!("transaction {id}")))
 }
 
+/// 按 `transaction_id`（桩端生成业务键，UNIQUE 索引）取详情。
+///
+/// 主要用于 OCPP StopTransaction 响应回调与外部系统对账。
+///
+/// **错误**：`NotFound` / `Db`。
 pub async fn get_by_transaction_id(
     db: &DatabaseConnection,
     transaction_id: &str,
@@ -65,6 +83,9 @@ pub async fn get_by_transaction_id(
         .ok_or_else(|| AppError::not_found(format!("transaction {transaction_id}")))
 }
 
+/// 部分更新；自动刷新 `update_time`。
+///
+/// **错误**：`NotFound` / `Db`。
 pub async fn update(
     db: &DatabaseConnection,
     id: i64,
@@ -94,6 +115,12 @@ pub async fn update(
     Ok(active.update(db).await?)
 }
 
+/// 计费结算：写入金额字段。
+///
+/// `payment_status` 不提供时默认 [`PaymentStatus::Unpaid`]，
+/// 等待第三方支付回调后通过 [`update`] 改为 `Paid`。
+///
+/// **错误**：`NotFound` / `Db`。
 pub async fn settle(
     db: &DatabaseConnection,
     id: i64,
@@ -109,6 +136,9 @@ pub async fn settle(
     Ok(active.update(db).await?)
 }
 
+/// 退款：仅当 `payment_status == Paid` 时可执行，改为 `Refunded`。
+///
+/// **错误**：`NotFound` / `BadRequest`（未支付无法退款） / `Db`。
 pub async fn refund(db: &DatabaseConnection, id: i64) -> Result<Model, AppError> {
     let existing = get(db, id).await?;
     if existing.payment_status != PaymentStatus::Paid {

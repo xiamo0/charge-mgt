@@ -1,4 +1,11 @@
 //! 充电事务/订单核心 entity（对应 `charge_transaction_ocpp16` 表）。
+//!
+//! 事务由 OCPP StartTransaction 创建（**不**通过 HTTP 入口创建），由 StopTransaction
+//! 收尾，并经 [`crate::service::charge_transaction::settle`] /
+//! [`crate::service::charge_transaction::refund`] 完成计费与退款。
+//!
+//! 金额一律使用 [`Decimal`] 而非 `f64`，避免浮点累计误差。
+//! `transaction_id` 在桩端生成并全局唯一，DB 上有 UNIQUE 索引。
 
 use rust_decimal::Decimal;
 use sea_orm::entity::prelude::*;
@@ -9,10 +16,12 @@ use super::enums::{PaymentStatus, TransactionStatus};
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
 #[sea_orm(table_name = "charge_transaction_ocpp16")]
 pub struct Model {
+    /// 平台侧主键（自增）
     #[sea_orm(primary_key)]
     pub id: i64,
     /// OCPP 事务 ID（桩端生成，全局唯一），有 UNIQUE 索引
     pub transaction_id: String,
+    /// 关联的用户 ID（可能为空：离线补传场景或未登录场景）
     pub user_id: Option<i64>,
     /// 触发充电的身份标签（RFID / Token）
     pub tag_id: String,
@@ -56,10 +65,13 @@ pub struct Model {
     pub is_offline_sync: i16,
     /// 数据同步重试次数
     pub sync_attempts: Option<i32>,
+    /// 最后一次同步/更新时间（补传流程用）
     #[sea_orm(column_type = "Timestamp")]
     pub last_sync_time: Option<DateTime>,
+    /// 记录创建时间
     #[sea_orm(column_type = "Timestamp")]
     pub create_time: DateTime,
+    /// 记录更新时间
     #[sea_orm(column_type = "Timestamp")]
     pub update_time: DateTime,
 }

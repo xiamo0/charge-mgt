@@ -1,3 +1,7 @@
+//! `GET/PATCH /api/v1/transactions[/...]` handler。
+//!
+//! 事务由 OCPP StartTransaction 创建，HTTP 入口**不**支持创建（无 POST）。
+
 use std::sync::Arc;
 
 use axum::extract::{Extension, Json, Path, Query};
@@ -11,6 +15,7 @@ use crate::error::AppError;
 use crate::service::charge_transaction as svc;
 use crate::state::AppState;
 
+/// `GET /api/v1/transactions`
 pub async fn list(
     Extension(state): Extension<Arc<AppState>>,
     Query(q): Query<TransactionListQuery>,
@@ -19,6 +24,7 @@ pub async fn list(
     Ok(Json(ApiResponse::ok(data)))
 }
 
+/// `GET /api/v1/transactions/:id`
 pub async fn get(
     Extension(state): Extension<Arc<AppState>>,
     Path(id): Path<i64>,
@@ -27,6 +33,7 @@ pub async fn get(
     Ok(Json(ApiResponse::ok(data)))
 }
 
+/// `GET /api/v1/transactions/by-transaction/:txn_id` — 按 OCPP 业务 ID 查。
 pub async fn get_by_transaction_id(
     Extension(state): Extension<Arc<AppState>>,
     Path(txn_id): Path<String>,
@@ -35,6 +42,7 @@ pub async fn get_by_transaction_id(
     Ok(Json(ApiResponse::ok(data)))
 }
 
+/// `PATCH /api/v1/transactions/:id`
 pub async fn update(
     Extension(state): Extension<Arc<AppState>>,
     Path(id): Path<i64>,
@@ -44,6 +52,7 @@ pub async fn update(
     Ok(Json(ApiResponse::ok(data)))
 }
 
+/// `POST /api/v1/transactions/:id/settle` — 写入结算金额。
 pub async fn settle(
     Extension(state): Extension<Arc<AppState>>,
     Path(id): Path<i64>,
@@ -53,6 +62,7 @@ pub async fn settle(
     Ok(Json(ApiResponse::ok(data)))
 }
 
+/// `POST /api/v1/transactions/:id/refund` — 仅 `payment_status == Paid` 时允许。
 pub async fn refund(
     Extension(state): Extension<Arc<AppState>>,
     Path(id): Path<i64>,
