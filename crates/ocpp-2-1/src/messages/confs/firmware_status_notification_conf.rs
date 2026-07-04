@@ -5,5 +5,7 @@ use serde::{Deserialize, Serialize};
 pub struct FirmwareStatusNotificationConfirmation {}
 
 impl FirmwareStatusNotificationConfirmation {
-    pub fn new() -> Self { Self {} }
+    pub fn new() -> Self {
+        Self {}
+    }
 }

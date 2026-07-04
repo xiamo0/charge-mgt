@@ -1,7 +1,7 @@
 //! OCPP 2.0.1 / 2.1 Monitoring types (Functional Block N — Diagnostics)
 
-use serde::{Deserialize, Serialize};
 use crate::common::{ComponentType, StatusInfoType, VariableType};
+use serde::{Deserialize, Serialize};
 
 /// 监控器类型枚举
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

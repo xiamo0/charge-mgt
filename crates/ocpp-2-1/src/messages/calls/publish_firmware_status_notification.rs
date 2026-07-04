@@ -1,6 +1,6 @@
 //! PublishFirmwareStatusNotification Request (Block L)
-use serde::{Deserialize, Serialize};
 use crate::common::PublishFirmwareStatusEnumType;
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

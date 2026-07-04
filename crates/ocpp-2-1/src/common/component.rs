@@ -1,7 +1,7 @@
 //! Component and Variable Types (Functional Block B — Provisioning)
 
-use serde::{Deserialize, Serialize};
 use crate::common::{EVSEType, StatusInfoType};
+use serde::{Deserialize, Serialize};
 
 /// 组件类型
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -16,7 +16,11 @@ pub struct ComponentType {
 
 impl ComponentType {
     pub fn new(name: impl Into<String>) -> Self {
-        Self { name: name.into(), instance: None, evse: None }
+        Self {
+            name: name.into(),
+            instance: None,
+            evse: None,
+        }
     }
 }
 
@@ -31,7 +35,10 @@ pub struct VariableType {
 
 impl VariableType {
     pub fn new(name: impl Into<String>) -> Self {
-        Self { name: name.into(), instance: None }
+        Self {
+            name: name.into(),
+            instance: None,
+        }
     }
 }
 

@@ -5,5 +5,7 @@ use serde::{Deserialize, Serialize};
 pub struct NotifyPriorityChargingConfirmation {}
 
 impl NotifyPriorityChargingConfirmation {
-    pub fn new() -> Self { Self {} }
+    pub fn new() -> Self {
+        Self {}
+    }
 }

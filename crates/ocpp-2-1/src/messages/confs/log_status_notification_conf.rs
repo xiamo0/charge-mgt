@@ -5,5 +5,7 @@ use serde::{Deserialize, Serialize};
 pub struct LogStatusNotificationConfirmation {}
 
 impl LogStatusNotificationConfirmation {
-    pub fn new() -> Self { Self {} }
+    pub fn new() -> Self {
+        Self {}
+    }
 }

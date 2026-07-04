@@ -1,9 +1,9 @@
 //! TransactionEvent Request (Block E)
-use serde::{Deserialize, Serialize};
 use crate::common::{
-    IdTokenType, EVSEType, MeterValueType, TransactionType,
-    TransactionEventEnumType, TriggerReasonEnumType,
+    EVSEType, IdTokenType, MeterValueType, TransactionEventEnumType, TransactionType,
+    TriggerReasonEnumType,
 };
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

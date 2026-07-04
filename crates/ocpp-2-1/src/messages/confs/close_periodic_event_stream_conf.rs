@@ -5,5 +5,7 @@ use serde::{Deserialize, Serialize};
 pub struct ClosePeriodicEventStreamConfirmation {}
 
 impl ClosePeriodicEventStreamConfirmation {
-    pub fn new() -> Self { Self {} }
+    pub fn new() -> Self {
+        Self {}
+    }
 }

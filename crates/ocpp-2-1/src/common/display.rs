@@ -1,7 +1,7 @@
 //! OCPP 2.0.1 / 2.1 Display management types (Functional Block O)
 
-use serde::{Deserialize, Serialize};
 use crate::common::{ComponentType, MessageContentType};
+use serde::{Deserialize, Serialize};
 
 /// 显示消息优先级枚举
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

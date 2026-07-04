@@ -1,6 +1,6 @@
 //! UnpublishFirmware Confirmation (Block L)
+use crate::common::{StatusInfoType, UnpublishFirmwareStatusEnumType};
 use serde::{Deserialize, Serialize};
-use crate::common::{UnpublishFirmwareStatusEnumType, StatusInfoType};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

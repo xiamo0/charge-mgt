@@ -1,7 +1,7 @@
 //! Authorization Types (Functional Block C / D)
 
-use serde::{Deserialize, Serialize};
 use crate::common::IdTokenInfoType;
+use serde::{Deserialize, Serialize};
 
 /// 本地授权数据
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -14,7 +14,10 @@ pub struct AuthorizationData {
 
 impl AuthorizationData {
     pub fn new(id_token: crate::common::IdTokenType) -> Self {
-        Self { id_token, id_token_info: None }
+        Self {
+            id_token,
+            id_token_info: None,
+        }
     }
 
     pub fn with_info(mut self, info: IdTokenInfoType) -> Self {

@@ -9,7 +9,9 @@ pub struct HeartbeatConfirmation {
 
 impl HeartbeatConfirmation {
     pub fn new(current_time: impl Into<String>) -> Self {
-        Self { current_time: current_time.into() }
+        Self {
+            current_time: current_time.into(),
+        }
     }
     pub fn now() -> Self {
         Self::new(crate::common::datetime::now_rfc3339())

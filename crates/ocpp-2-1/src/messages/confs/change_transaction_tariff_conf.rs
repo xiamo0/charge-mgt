@@ -1,6 +1,6 @@
 //! ChangeTransactionTariff Confirmation (Block I — 2.1)
+use crate::common::{StatusInfoType, TariffChangeStatusEnumType};
 use serde::{Deserialize, Serialize};
-use crate::common::{TariffChangeStatusEnumType, StatusInfoType};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

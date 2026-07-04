@@ -6,8 +6,14 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub enum OCPPInterfaceEnumType {
-    Wired0, Wired1, Wired2, Wired3,
-    Wireless0, Wireless1, Wireless2, Wireless3,
+    Wired0,
+    Wired1,
+    Wired2,
+    Wired3,
+    Wireless0,
+    Wireless1,
+    Wireless2,
+    Wireless3,
 }
 
 /// OCPP 版本枚举

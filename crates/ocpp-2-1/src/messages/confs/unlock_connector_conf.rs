@@ -1,6 +1,6 @@
 //! UnlockConnector Confirmation (Block F)
+use crate::common::{StatusInfoType, UnlockStatusEnumType};
 use serde::{Deserialize, Serialize};
-use crate::common::{UnlockStatusEnumType, StatusInfoType};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

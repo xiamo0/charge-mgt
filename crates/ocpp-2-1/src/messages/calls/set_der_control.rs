@@ -1,6 +1,9 @@
 //! SetDERControl Request (Block R — 2.1 New)
+use crate::common::{
+    DERControlEnumType, DERCurveType, EnterServiceType, FixedVarType, FreqDroopType, GradientType,
+    LimitMaxDischargeType,
+};
 use serde::{Deserialize, Serialize};
-use crate::common::{DERControlEnumType, DERCurveType, EnterServiceType, FixedVarType, FreqDroopType, GradientType, LimitMaxDischargeType};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

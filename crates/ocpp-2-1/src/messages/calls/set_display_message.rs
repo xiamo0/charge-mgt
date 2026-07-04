@@ -1,6 +1,6 @@
 //! SetDisplayMessage Request (Block O)
-use serde::{Deserialize, Serialize};
 use crate::common::MessageInfoType;
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

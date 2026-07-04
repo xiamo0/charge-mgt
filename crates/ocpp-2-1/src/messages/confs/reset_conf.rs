@@ -1,6 +1,6 @@
 //! Reset Confirmation (Block B)
-use serde::{Deserialize, Serialize};
 use crate::common::{ResetStatusEnumType, StatusInfoType};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

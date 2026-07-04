@@ -5,5 +5,7 @@ use serde::{Deserialize, Serialize};
 pub struct NotifyDERStartStopConfirmation {}
 
 impl NotifyDERStartStopConfirmation {
-    pub fn new() -> Self { Self {} }
+    pub fn new() -> Self {
+        Self {}
+    }
 }

@@ -1,6 +1,6 @@
 //! SetDefaultTariff Confirmation (Block I — 2.1)
+use crate::common::{StatusInfoType, TariffSetStatusEnumType};
 use serde::{Deserialize, Serialize};
-use crate::common::{TariffSetStatusEnumType, StatusInfoType};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

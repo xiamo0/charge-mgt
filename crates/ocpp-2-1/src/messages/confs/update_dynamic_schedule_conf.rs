@@ -1,6 +1,6 @@
 //! UpdateDynamicSchedule Confirmation (Block K — 2.1)
-use serde::{Deserialize, Serialize};
 use crate::common::{ChargingProfileStatusEnumType, StatusInfoType};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

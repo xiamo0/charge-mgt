@@ -1,6 +1,6 @@
 //! SendLocalList Request (Block D)
-use serde::{Deserialize, Serialize};
 use crate::common::{AuthorizationData, UpdateEnumType};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

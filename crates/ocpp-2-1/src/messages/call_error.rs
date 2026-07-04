@@ -1,13 +1,9 @@
 //! OCPP 2.1 CallError / CallResultError Factory Functions
 
-use crate::messages::envelope::{error_codes, CallError, CallResultError};
+use crate::messages::envelope::{CallError, CallResultError, error_codes};
 
 /// 创建一个新的 CallError 消息
-pub fn create_call_error(
-    unique_id: &str,
-    error_code: &str,
-    error_description: &str,
-) -> CallError {
+pub fn create_call_error(unique_id: &str, error_code: &str, error_description: &str) -> CallError {
     CallError::new(unique_id, error_code, error_description)
 }
 
@@ -96,11 +92,7 @@ pub fn result_protocol_error(unique_id: &str, description: &str) -> CallResultEr
 
 /// Format Violation Error (CallResultError)
 pub fn result_format_violation_error(unique_id: &str, description: &str) -> CallResultError {
-    CallResultError::new(
-        unique_id,
-        error_codes::FORMAT_VIOLATION_ERROR,
-        description,
-    )
+    CallResultError::new(unique_id, error_codes::FORMAT_VIOLATION_ERROR, description)
 }
 
 /// Property Constraint Violation (CallResultError)

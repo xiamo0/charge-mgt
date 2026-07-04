@@ -1,6 +1,6 @@
 //! CertificateSigned Confirmation (Block M)
-use serde::{Deserialize, Serialize};
 use crate::common::{CertificateSignedStatusEnumType, StatusInfoType};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

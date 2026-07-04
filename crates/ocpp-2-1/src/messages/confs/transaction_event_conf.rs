@@ -1,6 +1,6 @@
 //! TransactionEvent Confirmation (Block E)
-use serde::{Deserialize, Serialize};
 use crate::common::{IdTokenInfoType, MessageContentType};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -19,6 +19,12 @@ pub struct TransactionEventConfirmation {
 
 impl Default for TransactionEventConfirmation {
     fn default() -> Self {
-        Self { total_cost: None, charging_priority: None, updated_personal_message: None, id_token_info: None, offline: None }
+        Self {
+            total_cost: None,
+            charging_priority: None,
+            updated_personal_message: None,
+            id_token_info: None,
+            offline: None,
+        }
     }
 }

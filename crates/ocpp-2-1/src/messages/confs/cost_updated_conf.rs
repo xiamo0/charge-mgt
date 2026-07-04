@@ -5,5 +5,7 @@ use serde::{Deserialize, Serialize};
 pub struct CostUpdatedConfirmation {}
 
 impl CostUpdatedConfirmation {
-    pub fn new() -> Self { Self {} }
+    pub fn new() -> Self {
+        Self {}
+    }
 }

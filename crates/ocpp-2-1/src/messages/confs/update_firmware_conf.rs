@@ -1,6 +1,6 @@
 //! UpdateFirmware Confirmation (Block L)
+use crate::common::{StatusInfoType, UpdateFirmwareStatusEnumType};
 use serde::{Deserialize, Serialize};
-use crate::common::{UpdateFirmwareStatusEnumType, StatusInfoType};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

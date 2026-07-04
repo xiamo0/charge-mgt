@@ -28,11 +28,18 @@ pub struct ModemType {
 }
 
 impl Default for ModemType {
-    fn default() -> Self { Self { iccid: None, imsi: None } }
+    fn default() -> Self {
+        Self {
+            iccid: None,
+            imsi: None,
+        }
+    }
 }
 
 impl ModemType {
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 }
 
 /// 充电站类型

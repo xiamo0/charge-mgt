@@ -1,6 +1,6 @@
 //! Authorize Request (Block C)
-use serde::{Deserialize, Serialize};
 use crate::common::{IdTokenType, OCSPRequestDataType};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -14,7 +14,11 @@ pub struct AuthorizeRequest {
 
 impl AuthorizeRequest {
     pub fn new(id_token: IdTokenType) -> Self {
-        Self { id_token, certificate: None, iso_15118_certificate_hash_data: None }
+        Self {
+            id_token,
+            certificate: None,
+            iso_15118_certificate_hash_data: None,
+        }
     }
 }
 

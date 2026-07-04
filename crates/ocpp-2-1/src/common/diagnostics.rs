@@ -1,7 +1,7 @@
 //! OCPP 2.0.1 / 2.1 Diagnostics & Event types (Functional Block N)
 
-use serde::{Deserialize, Serialize};
 use crate::common::{ComponentType, VariableType};
+use serde::{Deserialize, Serialize};
 
 /// 日志类型枚举
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

@@ -13,11 +13,17 @@ pub struct EVSEType {
 
 impl EVSEType {
     pub fn new(id: i32) -> Self {
-        Self { id, connector_id: None }
+        Self {
+            id,
+            connector_id: None,
+        }
     }
 
     pub fn with_connector(id: i32, connector_id: i32) -> Self {
-        Self { id, connector_id: Some(connector_id) }
+        Self {
+            id,
+            connector_id: Some(connector_id),
+        }
     }
 
     pub fn is_whole_station(&self) -> bool {

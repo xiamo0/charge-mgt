@@ -1,6 +1,8 @@
 //! GetInstalledCertificateIds Confirmation (Block M)
+use crate::common::{
+    CertificateHashDataChainType, GetInstalledCertificateStatusEnumType, StatusInfoType,
+};
 use serde::{Deserialize, Serialize};
-use crate::common::{CertificateHashDataChainType, GetInstalledCertificateStatusEnumType, StatusInfoType};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

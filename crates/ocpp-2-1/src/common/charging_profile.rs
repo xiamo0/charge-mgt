@@ -51,7 +51,12 @@ pub struct ChargingSchedulePeriodType {
 
 impl ChargingSchedulePeriodType {
     pub fn new(start_period: i32, limit: f64) -> Self {
-        Self { start_period, limit, number_phases: None, phase_to_use: None }
+        Self {
+            start_period,
+            limit,
+            number_phases: None,
+            phase_to_use: None,
+        }
     }
 }
 
