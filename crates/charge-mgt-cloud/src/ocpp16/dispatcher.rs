@@ -1,8 +1,5 @@
 use crate::entity::sent_messages;
-use crate::ocpp16::cp_request_handlers::{
-    Handler, UnkonwnRequest, authorize, boot_notification, data_transfer, heartbeat, meter_values,
-    start_transaction, status_notification, stop_transaction,
-};
+use crate::ocpp16::cp_request_handlers::{Handler, UnkonwnRequest};
 use crate::ocpp16::envelope::CloudMessage;
 use crate::ocpp16::error::HandlerError;
 use crate::state::AppState;
@@ -16,8 +13,7 @@ use ocpp_1_6::protocol::{
     ACTION_METER_VALUES, ACTION_START_TRANSACTION, ACTION_STATUS_NOTIFICATION,
     ACTION_STOP_TRANSACTION,
 };
-use sea_orm::sea_query::Value;
-use sea_orm::{ConnectionTrait, DatabaseBackend, EntityTrait, Set, Statement, TryInsertResult};
+use sea_orm::{EntityTrait, Set, TryInsertResult};
 use tracing::{info, warn};
 
 pub struct MessageDispatcher {
@@ -113,7 +109,7 @@ impl MessageDispatcher {
             ACTION_STATUS_NOTIFICATION => StatusNotificationRequest::handle(state, msg).await,
             ACTION_DATA_TRANSFER => DataTransferRequest::handle(state, msg).await,
 
-            other => UnkonwnRequest::handle(state, msg).await,
+            _other => UnkonwnRequest::handle(state, msg).await,
         }
     }
 

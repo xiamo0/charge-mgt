@@ -32,7 +32,7 @@
 
 use axum::{
     Router,
-    routing::{get, patch, post},
+    routing::{get, post},
 };
 
 use crate::handler::{

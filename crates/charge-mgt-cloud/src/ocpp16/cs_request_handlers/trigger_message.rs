@@ -2,27 +2,23 @@ use crate::ocpp16::cs_request_handlers::Handler;
 use crate::ocpp16::envelope::CloudMessage;
 use crate::ocpp16::error::HandlerError;
 use crate::state::AppState;
-use ocpp_1_6::calls::{
-    CancelReservationRequest, ChangeConfigurationRequest, GetCompositeScheduleRequest,
-    GetConfigurationRequest, GetDiagnosticsRequest, GetLocalListVersionRequest,
-    RemoteStopTransactionRequest, ReserveNowRequest, SendLocalListRequest,
-    SetChargingProfileRequest, TriggerMessageRequest,
-};
-use ocpp_1_6::confs::{
-    CancelReservationConfirmation, ChangeConfigurationConfirmation,
-    GetCompositeScheduleConfirmation, GetConfigurationConfirmation, GetDiagnosticsConfirmation,
-    GetLocalListVersionConfirmation, RemoteStopTransactionConfirmation, ReserveNowConfirmation,
-    SendLocalListConfirmation, SetChargingProfileConfirmation, TriggerMessageConfirmation,
-};
+use ocpp_1_6::calls::TriggerMessageRequest;
+use ocpp_1_6::confs::TriggerMessageConfirmation;
 
 impl Handler<TriggerMessageConfirmation> for TriggerMessageRequest {
     #[cfg(feature = "cs_send_message_by_http")]
-    async fn http_handler(state: &AppState, msg: &CloudMessage) -> Result<TriggerMessageConfirmation, HandlerError> {
+    async fn http_handler(
+        _state: &AppState,
+        _msg: &CloudMessage,
+    ) -> Result<TriggerMessageConfirmation, HandlerError> {
         todo!()
     }
 
     #[cfg(feature = "cs_send_message_by_mq")]
-    async fn mq_handler(state: &AppState, msg: &CloudMessage) -> Result<TriggerMessageConfirmation, HandlerError> {
+    async fn mq_handler(
+        _state: &AppState,
+        _msg: &CloudMessage,
+    ) -> Result<TriggerMessageConfirmation, HandlerError> {
         todo!()
     }
 }

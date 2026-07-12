@@ -8,16 +8,16 @@ use ocpp_1_6::confs::CancelReservationConfirmation;
 impl Handler<CancelReservationConfirmation> for CancelReservationRequest {
     #[cfg(feature = "cs_send_message_by_http")]
     async fn http_handler(
-        state: &AppState,
-        msg: &CloudMessage,
+        _state: &AppState,
+        _msg: &CloudMessage,
     ) -> Result<CancelReservationConfirmation, HandlerError> {
         todo!()
     }
 
     #[cfg(feature = "cs_send_message_by_mq")]
     async fn mq_handler(
-        state: &AppState,
-        msg: &CloudMessage,
+        _state: &AppState,
+        _msg: &CloudMessage,
     ) -> Result<CancelReservationConfirmation, HandlerError> {
         todo!()
     }

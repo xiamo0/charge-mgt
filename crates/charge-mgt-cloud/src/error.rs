@@ -89,7 +89,11 @@ impl IntoResponse for AppError {
                 e.to_string(),
             ),
             Self::Json(e) => (axum::http::StatusCode::BAD_REQUEST, 400, e.to_string()),
-            Self::Handler(e) => (axum::http::StatusCode::INTERNAL_SERVER_ERROR, 500, e.to_string()),
+            Self::Handler(e) => (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                500,
+                e.to_string(),
+            ),
         };
         let body = Json(ApiResponse::<()>::error(code, message));
         (status, body).into_response()
