@@ -4,9 +4,7 @@ use chrono::Local;
 use sea_orm::*;
 
 use crate::dto::common::PageResult;
-use crate::dto::smart_charge_profile::{
-    CreateProfile, ProfileListQuery, ProfileResponse,
-};
+use crate::dto::smart_charge_profile::{CreateProfile, ProfileListQuery, ProfileResponse};
 use crate::entity::smart_charge_profile::{ActiveModel, Column, Entity, Model};
 use crate::error::AppError;
 

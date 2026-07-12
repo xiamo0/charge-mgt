@@ -31,9 +31,7 @@
 //! 实现（编译时会缺失相关 trait 方法），因此本模块通过宏显式展开以避免依赖不稳定的
 //! derive 行为。
 
-use sea_orm::{
-    DbErr, QueryResult, TryGetError, TryGetable, sea_query,
-};
+use sea_orm::{DbErr, QueryResult, TryGetError, TryGetable, sea_query};
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
@@ -213,16 +211,33 @@ pub enum ProfileDeliveryStatus {
 }
 
 impl_i16_enum!(ConnectorType, [GbtDc = 1, GbtAc = 2]);
-impl_i16_enum!(TagType, [Rfid = 1, QrCode = 2, LicensePlate = 3, AppToken = 4]);
+impl_i16_enum!(
+    TagType,
+    [Rfid = 1, QrCode = 2, LicensePlate = 3, AppToken = 4]
+);
 impl_i16_enum!(IdentityStatus, [Accepted = 1, Blocked = 2, Expired = 3]);
 impl_i16_enum!(
     TransactionStatus,
-    [InProgress = 0, Completed = 1, Aborted = 2, OfflinePending = 3]
+    [
+        InProgress = 0,
+        Completed = 1,
+        Aborted = 2,
+        OfflinePending = 3
+    ]
 );
-impl_i16_enum!(PaymentStatus, [Unpaid = 0, Paid = 1, Failed = 2, Refunded = 3]);
+impl_i16_enum!(
+    PaymentStatus,
+    [Unpaid = 0, Paid = 1, Failed = 2, Refunded = 3]
+);
 impl_i16_enum!(
     ReservationStatus,
-    [Pending = 0, InProgress = 1, Completed = 2, Cancelled = 3, Breached = 4]
+    [
+        Pending = 0,
+        InProgress = 1,
+        Completed = 2,
+        Cancelled = 3,
+        Breached = 4
+    ]
 );
 impl_i16_enum!(
     ProfileDeliveryStatus,

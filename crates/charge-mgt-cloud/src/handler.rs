@@ -12,3 +12,4 @@ pub mod charge_reservation;
 pub mod charge_transaction;
 pub mod identity;
 pub mod profile;
+pub mod send_ocpp16_message;

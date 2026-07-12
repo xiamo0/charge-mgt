@@ -1,3 +1,6 @@
+use crate::ocpp16::error::HandlerError;
+use serde::Serialize;
+
 // 云平台向充电桩发送请求
 pub mod cancel_reservation;
 pub mod change_availability;
@@ -16,3 +19,31 @@ pub mod set_charging_profile;
 pub mod trigger_message;
 pub mod unlock_connector;
 pub mod update_firmware;
+mod remote_start_transaction;
+
+pub trait Handler<T: Serialize> {
+    async fn handle(
+        state: &crate::state::AppState,
+        msg: &crate::ocpp16::envelope::CloudMessage,
+    ) -> Result<serde_json::Value, HandlerError> {
+        let r = Self::handel_detail(state, msg).await?;
+
+        Ok(serde_json::to_value(&r)?)
+    }
+    async fn handel_detail(
+        state: &crate::state::AppState,
+        msg: &crate::ocpp16::envelope::CloudMessage,
+    ) -> Result<T, HandlerError>;
+}
+pub struct UnkonwnRequest;
+impl Handler<String> for UnkonwnRequest {
+    async fn handel_detail(
+        _state: &crate::state::AppState,
+        msg: &crate::ocpp16::envelope::CloudMessage,
+    ) -> Result<std::string::String, crate::ocpp16::error::HandlerError> {
+        let action = msg.action.as_str();
+        Err(HandlerError::NotSupported(format!(
+            "action '{action}' not implemented"
+        )))
+    }
+}

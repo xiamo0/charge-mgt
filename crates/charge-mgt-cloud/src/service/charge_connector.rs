@@ -50,11 +50,7 @@ pub async fn get(
     Entity::find_by_id((charge_point_id.to_owned(), connector_id.to_owned()))
         .one(db)
         .await?
-        .ok_or_else(|| {
-            AppError::not_found(format!(
-                "connector {charge_point_id}/{connector_id}"
-            ))
-        })
+        .ok_or_else(|| AppError::not_found(format!("connector {charge_point_id}/{connector_id}")))
 }
 
 /// 部分更新；自动刷新 `update_time`。

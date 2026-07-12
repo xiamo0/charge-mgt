@@ -17,11 +17,12 @@
 //! 所有错误统一包成 [`ApiResponse::<()>::error`] 结构，与成功响应保持
 //! `code` / `message` 字段一致，仅 `data` 缺失。
 
-use axum::response::{IntoResponse, Response};
 use axum::Json;
+use axum::response::{IntoResponse, Response};
 use sea_orm::DbErr;
 
 use crate::dto::common::ApiResponse;
+use crate::ocpp16::error::HandlerError;
 
 /// 应用层统一错误类型。
 #[derive(Debug, thiserror::Error)]
@@ -49,6 +50,9 @@ pub enum AppError {
     /// serde_json 反/序列化错误；HTTP 400。
     #[error("json error: {0}")]
     Json(#[from] serde_json::Error),
+
+    #[error("json error: {0}")]
+    Handler(#[from] HandlerError),
 }
 
 impl AppError {
@@ -85,6 +89,7 @@ impl IntoResponse for AppError {
                 e.to_string(),
             ),
             Self::Json(e) => (axum::http::StatusCode::BAD_REQUEST, 400, e.to_string()),
+            Self::Handler(e) => (axum::http::StatusCode::INTERNAL_SERVER_ERROR, 500, e.to_string()),
         };
         let body = Json(ApiResponse::<()>::error(code, message));
         (status, body).into_response()

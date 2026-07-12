@@ -30,10 +30,14 @@
 //! | GET/POST | `/api/v1/charging-profiles`                                    | list / create                          |
 //! | GET/DELETE | `/api/v1/charging-profiles/:id`                                | get / delete (physical)                |
 
-use axum::{Router, routing::{get, patch, post}};
+use axum::{
+    Router,
+    routing::{get, patch, post},
+};
 
 use crate::handler::{
     charge_connector, charge_point, charge_reservation, charge_transaction, identity, profile,
+    send_ocpp16_message,
 };
 
 /// 装配 v1 业务路由（nest 在 `/api/v1` 下）。
@@ -43,8 +47,16 @@ pub fn build() -> Router {
 
 fn v1_routes() -> Router {
     Router::new()
+        // 发送报文
+        .route(
+            "/send-ocpp16-message/:action",
+            post(send_ocpp16_message::send),
+        )
         // charge points
-        .route("/charge-points", get(charge_point::list).post(charge_point::create))
+        .route(
+            "/charge-points",
+            get(charge_point::list).post(charge_point::create),
+        )
         .route(
             "/charge-points/:charge_point_id",
             get(charge_point::get)
@@ -103,10 +115,7 @@ fn v1_routes() -> Router {
             "/reservations/:id",
             get(charge_reservation::get).patch(charge_reservation::update),
         )
-        .route(
-            "/reservations/:id/cancel",
-            post(charge_reservation::cancel),
-        )
+        .route("/reservations/:id/cancel", post(charge_reservation::cancel))
         // charging profiles
         .route(
             "/charging-profiles",

@@ -58,10 +58,7 @@ pub async fn get(db: &DatabaseConnection, id: i64) -> Result<Model, AppError> {
 /// 创建预约，初始状态为 [`ReservationStatus::Pending`]。
 ///
 /// **错误**：`BadRequest`（`end_time <= start_time`） / `Db`。
-pub async fn create(
-    db: &DatabaseConnection,
-    req: CreateReservation,
-) -> Result<Model, AppError> {
+pub async fn create(db: &DatabaseConnection, req: CreateReservation) -> Result<Model, AppError> {
     if req.end_time <= req.start_time {
         return Err(AppError::bad_request("end_time must be after start_time"));
     }
@@ -93,7 +90,9 @@ pub async fn update(
 ) -> Result<Model, AppError> {
     let existing = get(db, id).await?;
     if existing.status != ReservationStatus::Pending {
-        return Err(AppError::bad_request("only pending reservations can be updated"));
+        return Err(AppError::bad_request(
+            "only pending reservations can be updated",
+        ));
     }
     let mut active: ActiveModel = existing.into();
     if let Some(v) = req.connector_id {
@@ -122,7 +121,9 @@ pub async fn cancel(
 ) -> Result<Model, AppError> {
     let existing = get(db, id).await?;
     if existing.status != ReservationStatus::Pending {
-        return Err(AppError::bad_request("only pending reservations can be cancelled"));
+        return Err(AppError::bad_request(
+            "only pending reservations can be cancelled",
+        ));
     }
     let mut active: ActiveModel = existing.into();
     active.status = Set(ReservationStatus::Cancelled);

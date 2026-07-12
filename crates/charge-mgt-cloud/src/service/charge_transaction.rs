@@ -46,7 +46,9 @@ pub async fn list(
     if !q.include_offline_sync.unwrap_or(false) {
         select = select.filter(Column::IsOfflineSync.eq(0_i16));
     }
-    let paginator = select.order_by_desc(Column::StartTime).paginate(db, page.page_size);
+    let paginator = select
+        .order_by_desc(Column::StartTime)
+        .paginate(db, page.page_size);
     let total = paginator.num_items().await?;
     let items = paginator.fetch_page(page.page.saturating_sub(1)).await?;
     Ok(PageResult {
@@ -142,7 +144,9 @@ pub async fn settle(
 pub async fn refund(db: &DatabaseConnection, id: i64) -> Result<Model, AppError> {
     let existing = get(db, id).await?;
     if existing.payment_status != PaymentStatus::Paid {
-        return Err(AppError::bad_request("only paid transactions can be refunded"));
+        return Err(AppError::bad_request(
+            "only paid transactions can be refunded",
+        ));
     }
     let mut active: ActiveModel = existing.into();
     active.payment_status = Set(PaymentStatus::Refunded);

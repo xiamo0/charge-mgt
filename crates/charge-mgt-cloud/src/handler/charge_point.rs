@@ -5,9 +5,7 @@ use std::sync::Arc;
 use axum::extract::{Extension, Json, Path, Query};
 use axum::response::IntoResponse;
 
-use crate::dto::charge_point::{
-    ChargePointListQuery, CreateChargePoint, UpdateChargePoint,
-};
+use crate::dto::charge_point::{ChargePointListQuery, CreateChargePoint, UpdateChargePoint};
 use crate::dto::common::ApiResponse;
 use crate::error::AppError;
 use crate::service::charge_point as svc;

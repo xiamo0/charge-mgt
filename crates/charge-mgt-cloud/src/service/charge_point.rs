@@ -6,9 +6,9 @@ use sea_orm::*;
 use crate::dto::charge_point::{
     ChargePointListQuery, ChargePointResponse, CreateChargePoint, UpdateChargePoint,
 };
+use crate::dto::common::PageResult;
 use crate::entity::charge_point::{ActiveModel, Column, Entity, Model};
 use crate::error::AppError;
-use crate::dto::common::PageResult;
 
 /// 列表分页查询。
 ///
@@ -61,10 +61,7 @@ pub async fn get(db: &DatabaseConnection, id: &str) -> Result<Model, AppError> {
 /// **错误**：
 /// * `Conflict`：`charge_point_id` 已存在
 /// * `Db`：DB 错误
-pub async fn create(
-    db: &DatabaseConnection,
-    req: CreateChargePoint,
-) -> Result<Model, AppError> {
+pub async fn create(db: &DatabaseConnection, req: CreateChargePoint) -> Result<Model, AppError> {
     // 业务级唯一性校验（DB 没有 UNIQUE 索引，依赖 charge_point_id 作为主键
     // 已经隐式保证）；此处显式查一次，返回 409 而非依赖 sea-orm 的 DbErr
     if Entity::find_by_id(req.charge_point_id.clone())
