@@ -1,5 +1,8 @@
 use crate::ocpp16::error::HandlerError;
 use serde::Serialize;
+use ocpp_1_6::confs::CancelReservationConfirmation;
+use crate::ocpp16::envelope::CloudMessage;
+use crate::state::AppState;
 
 // 云平台向充电桩发送请求
 pub mod cancel_reservation;
@@ -33,14 +36,49 @@ pub trait Handler<T: Serialize> {
     async fn handel_detail(
         state: &crate::state::AppState,
         msg: &crate::ocpp16::envelope::CloudMessage,
-    ) -> Result<T, HandlerError>;
+    ) -> Result<T, HandlerError>{
+        #[cfg(feature = "cs_send_message_by_http")]
+        {
+            return Self::http_handler(state, msg).await;
+        }
+        #[cfg(feature = "cs_send_message_by_mq")]
+        {
+            return Self::mq_handler(state, msg).await;
+        }
+        // 兜底处理：如果两个 feature 都没有启用，编译时直接报错
+        #[cfg(not(any(feature = "cs_send_message_by_http", feature = "cs_send_message_by_mq")))]
+        {
+            Err(HandlerError::ConfigError(
+                "No message sending backend configured. Enable 'cs_send_message_by_http' or 'cs_send_message_by_mq' feature.".into()
+            ))
+        }
+    }
+
+
+
+    #[cfg(feature = "cs_send_message_by_http")]
+    async fn http_handler(
+        state: &AppState,
+        msg: &CloudMessage,
+    ) -> Result<T, HandlerError> ;
+    #[cfg(feature = "cs_send_message_by_mq")]
+    async fn mq_handler(
+        state: &AppState,
+        msg: &CloudMessage,
+    ) -> Result<T, HandlerError> ;
+
+
 }
 pub struct UnkonwnRequest;
 impl Handler<String> for UnkonwnRequest {
-    async fn handel_detail(
-        _state: &crate::state::AppState,
-        msg: &crate::ocpp16::envelope::CloudMessage,
-    ) -> Result<std::string::String, crate::ocpp16::error::HandlerError> {
+    async fn http_handler(state: &AppState, msg: &CloudMessage) -> Result<String, HandlerError> {
+        let action = msg.action.as_str();
+        Err(HandlerError::NotSupported(format!(
+            "action '{action}' not implemented"
+        )))
+    }
+
+    async fn mq_handler(state: &AppState, msg: &CloudMessage) -> Result<String, HandlerError> {
         let action = msg.action.as_str();
         Err(HandlerError::NotSupported(format!(
             "action '{action}' not implemented"

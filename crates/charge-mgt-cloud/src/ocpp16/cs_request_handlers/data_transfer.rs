@@ -8,7 +8,16 @@ use ocpp_1_6::confs::{
 };
 
 impl Handler<DataTransferConfirmation> for DataTransferRequest {
-    async fn handel_detail(
+    #[cfg(feature = "cs_send_message_by_http")]
+    async fn http_handler(
+        state: &AppState,
+        msg: &CloudMessage,
+    ) -> Result<DataTransferConfirmation, HandlerError> {
+        todo!()
+    }
+
+    #[cfg(feature = "cs_send_message_by_mq")]
+    async fn mq_handler(
         state: &AppState,
         msg: &CloudMessage,
     ) -> Result<DataTransferConfirmation, HandlerError> {

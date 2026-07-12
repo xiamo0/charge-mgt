@@ -6,10 +6,13 @@ use ocpp_1_6::calls::{CancelReservationRequest, ChangeConfigurationRequest, GetC
 use ocpp_1_6::confs::{CancelReservationConfirmation, ChangeConfigurationConfirmation, GetCompositeScheduleConfirmation, GetConfigurationConfirmation, GetDiagnosticsConfirmation, GetLocalListVersionConfirmation, RemoteStartTransactionConfirmation, RemoteStopTransactionConfirmation};
 
 impl Handler<RemoteStartTransactionConfirmation> for RemoteStartTransactionRequest {
-    async fn handel_detail(
-        state: &AppState,
-        msg: &CloudMessage,
-    ) -> Result<RemoteStartTransactionConfirmation, HandlerError> {
+    #[cfg(feature = "cs_send_message_by_http")]
+    async fn http_handler(state: &AppState, msg: &CloudMessage) -> Result<RemoteStartTransactionConfirmation, HandlerError> {
+        todo!()
+    }
+
+    #[cfg(feature = "cs_send_message_by_mq")]
+    async fn mq_handler(state: &AppState, msg: &CloudMessage) -> Result<RemoteStartTransactionConfirmation, HandlerError> {
         todo!()
     }
 }

@@ -6,10 +6,17 @@ use ocpp_1_6::calls::{CancelReservationRequest, ChangeConfigurationRequest};
 use ocpp_1_6::confs::{CancelReservationConfirmation, ChangeConfigurationConfirmation};
 
 impl Handler<ChangeConfigurationConfirmation> for ChangeConfigurationRequest {
-    async fn handel_detail(
+    #[cfg(feature = "cs_send_message_by_http")]
+    async fn http_handler(state: &AppState, msg: &CloudMessage) -> Result<ChangeConfigurationConfirmation, HandlerError> {
+        todo!()
+    }
+
+    #[cfg(feature = "cs_send_message_by_mq")]
+    async fn mq_handler(
         state: &AppState,
         msg: &CloudMessage,
     ) -> Result<ChangeConfigurationConfirmation, HandlerError> {
         todo!()
     }
 }
+

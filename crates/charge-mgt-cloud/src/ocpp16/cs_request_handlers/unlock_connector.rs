@@ -17,10 +17,13 @@ use ocpp_1_6::confs::{
 };
 
 impl Handler<UnlockConnectorConfirmation> for UnlockConnectorRequest {
-    async fn handel_detail(
-        state: &AppState,
-        msg: &CloudMessage,
-    ) -> Result<UnlockConnectorConfirmation, HandlerError> {
+    #[cfg(feature = "cs_send_message_by_http")]
+    async fn http_handler(state: &AppState, msg: &CloudMessage) -> Result<UnlockConnectorConfirmation, HandlerError> {
+        todo!()
+    }
+
+    #[cfg(feature = "cs_send_message_by_mq")]
+    async fn mq_handler(state: &AppState, msg: &CloudMessage) -> Result<UnlockConnectorConfirmation, HandlerError> {
         todo!()
     }
 }

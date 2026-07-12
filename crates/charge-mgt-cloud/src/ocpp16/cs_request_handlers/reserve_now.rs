@@ -14,10 +14,13 @@ use ocpp_1_6::confs::{
 };
 
 impl Handler<ReserveNowConfirmation> for ReserveNowRequest {
-    async fn handel_detail(
-        state: &AppState,
-        msg: &CloudMessage,
-    ) -> Result<ReserveNowConfirmation, HandlerError> {
+    #[cfg(feature = "cs_send_message_by_http")]
+    async fn http_handler(state: &AppState, msg: &CloudMessage) -> Result<ReserveNowConfirmation, HandlerError> {
+        todo!()
+    }
+
+    #[cfg(feature = "cs_send_message_by_mq")]
+    async fn mq_handler(state: &AppState, msg: &CloudMessage) -> Result<ReserveNowConfirmation, HandlerError> {
         todo!()
     }
 }

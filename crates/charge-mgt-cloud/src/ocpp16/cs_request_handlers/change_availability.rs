@@ -6,7 +6,16 @@ use ocpp_1_6::calls::ChangeAvailabilityRequest;
 use ocpp_1_6::confs::ChangeAvailabilityConfirmation;
 
 impl Handler<ChangeAvailabilityConfirmation> for ChangeAvailabilityRequest {
-    async fn handel_detail(
+    #[cfg(feature = "cs_send_message_by_http")]
+    async fn http_handler(
+        state: &AppState,
+        msg: &CloudMessage,
+    ) -> Result<ChangeAvailabilityConfirmation, HandlerError> {
+        todo!()
+    }
+    #[cfg(feature = "cs_send_message_by_mq")]
+
+    async fn mq_handler(
         state: &AppState,
         msg: &CloudMessage,
     ) -> Result<ChangeAvailabilityConfirmation, HandlerError> {

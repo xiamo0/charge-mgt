@@ -10,7 +10,7 @@ name = "charge_mgt_cloud"
 path = "src/main.rs"
 
 [features]
-default = ["cs_send_message_by_http"]
+default = ["cs_send_message_by_http", "cs_send_message_by_mq"]
 cs_send_message_by_http = []
 cs_send_message_by_mq = []
 
