@@ -19,14 +19,16 @@
 
 use axum::Json;
 use axum::response::{IntoResponse, Response};
-use sea_orm::DbErr;
+use sea_orm::{ColIdx, DbErr};
 
-use crate::dto::common::ApiResponse;
+use crate::ocpp16::dto::common::ApiResponse;
 use crate::ocpp16::error::HandlerError;
 
 /// 应用层统一错误类型。
 #[derive(Debug, thiserror::Error)]
 pub enum AppError {
+    #[error("{0} config not initialized")]
+    ConfigNotInitialized(String),
     /// 资源不存在（如主键查询无果）；HTTP 404。
     #[error("not found: {0}")]
     NotFound(String),
@@ -75,6 +77,11 @@ impl AppError {
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let (status, code, message) = match &self {
+            Self::ConfigNotInitialized(msg) => (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                500,
+                msg.clone(),
+            ),
             Self::NotFound(msg) => (axum::http::StatusCode::NOT_FOUND, 404, msg.clone()),
             Self::BadRequest(msg) => (axum::http::StatusCode::BAD_REQUEST, 400, msg.clone()),
             Self::Conflict(msg) => (axum::http::StatusCode::CONFLICT, 409, msg.clone()),

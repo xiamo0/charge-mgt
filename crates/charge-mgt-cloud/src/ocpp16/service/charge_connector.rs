@@ -1,0 +1,78 @@
+//! 充电枪业务逻辑。
+//!
+//! 注意：**无** create / soft_delete / restore — 枪由 OCPP StatusNotification
+//! 触发创建，HTTP 入口不开放。
+
+use chrono::Local;
+use sea_orm::*;
+
+use crate::error::AppError;
+use crate::ocpp16::dto::charge_connector::{
+    ChargeConnectorListQuery, ChargeConnectorResponse, UpdateChargeConnector,
+};
+use crate::ocpp16::dto::common::PageResult;
+use crate::ocpp16::entity::charge_connector::{ActiveModel, Column, Entity, Model};
+
+/// 列表分页查询，按 `charge_point_id` / `status` 可选过滤。
+///
+/// **错误**：`Db`。
+pub async fn list(
+    db: &DatabaseConnection,
+    q: ChargeConnectorListQuery,
+) -> Result<PageResult<ChargeConnectorResponse>, AppError> {
+    let page = q.page_query();
+    let mut select = Entity::find();
+    if let Some(pid) = &q.charge_point_id {
+        select = select.filter(Column::ChargePointId.eq(pid.clone()));
+    }
+    if let Some(st) = &q.status {
+        select = select.filter(Column::Status.eq(st.clone()));
+    }
+    let paginator = select.paginate(db, page.page_size);
+    let total = paginator.num_items().await?;
+    let items = paginator.fetch_page(page.page.saturating_sub(1)).await?;
+    Ok(PageResult {
+        items,
+        total,
+        page: page.page,
+        page_size: page.page_size,
+    })
+}
+
+/// 按复合主键 `(charge_point_id, connector_id)` 取详情。
+///
+/// **错误**：`NotFound` / `Db`。
+pub async fn get(
+    db: &DatabaseConnection,
+    charge_point_id: &str,
+    connector_id: &str,
+) -> Result<Model, AppError> {
+    Entity::find_by_id((charge_point_id.to_owned(), connector_id.to_owned()))
+        .one(db)
+        .await?
+        .ok_or_else(|| AppError::not_found(format!("connector {charge_point_id}/{connector_id}")))
+}
+
+/// 部分更新；自动刷新 `update_time`。
+///
+/// **错误**：`NotFound` / `Db`。
+pub async fn update(
+    db: &DatabaseConnection,
+    charge_point_id: &str,
+    connector_id: &str,
+    req: UpdateChargeConnector,
+) -> Result<Model, AppError> {
+    let existing = get(db, charge_point_id, connector_id).await?;
+    let mut active: ActiveModel = existing.into();
+    if let Some(v) = req.connector_type {
+        active.connector_type = Set(v);
+    }
+    if let Some(v) = req.status {
+        active.status = Set(v);
+    }
+    if let Some(v) = req.error_code {
+        active.error_code = Set(Some(v));
+    }
+    active.update_time = Set(Local::now().naive_local());
+    Ok(active.update(db).await?)
+}

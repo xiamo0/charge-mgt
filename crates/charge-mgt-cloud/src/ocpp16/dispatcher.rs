@@ -1,7 +1,7 @@
-use crate::entity::sent_messages;
-use crate::ocpp16::cp_request_handlers::{Handler, UnkonwnRequest};
+use crate::ocpp16::entity::sent_messages;
 use crate::ocpp16::envelope::CloudMessage;
 use crate::ocpp16::error::HandlerError;
+use crate::ocpp16::message_from_cp_handler::{Handler, UnknownRequest};
 use crate::state::AppState;
 use chrono::Local;
 use ocpp_1_6::calls::{
@@ -14,7 +14,7 @@ use ocpp_1_6::protocol::{
     ACTION_STOP_TRANSACTION,
 };
 use sea_orm::{EntityTrait, Set, TryInsertResult};
-use tracing::{info, warn};
+use tracing::{info, log, warn};
 
 pub struct MessageDispatcher {
     state: AppState,
@@ -40,29 +40,31 @@ impl MessageDispatcher {
             processed_at: Set(Local::now().with_timezone(Local::now().offset())),
         };
 
-        let res = sent_messages::Entity::insert(new_message)
-            .on_conflict_do_nothing()
-            .exec(&self.state.db)
-            .await
-            .map_err(|e| DispatchError::Database(e.to_string()))?;
+        if let Some(db) = &self.state.db {
+            let res = sent_messages::Entity::insert(new_message)
+                .on_conflict_do_nothing()
+                .exec(db)
+                .await
+                .map_err(|e| DispatchError::Database(e.to_string()))?;
 
-        match res {
-            TryInsertResult::Inserted(keys) => {
-                info!("新消息，开始处理{:?}", keys.last_insert_id);
-            }
-            TryInsertResult::Conflicted => {
-                info!(
-                unique_id = %msg.unique_id,
-                "重复消息，跳过（幂等保护）"
-                );
-                return Ok(());
-            }
-            TryInsertResult::Empty => {
-                info!(
-                unique_id = %msg.unique_id,
-                "消息已存在但未插入，可能是数据库异常，跳过"
-                );
-                return Ok(());
+            match res {
+                TryInsertResult::Inserted(keys) => {
+                    info!("新消息，开始处理{:?}", keys.last_insert_id);
+                }
+                TryInsertResult::Conflicted => {
+                    info!(
+                    unique_id = %msg.unique_id,
+                    "重复消息，跳过（幂等保护）"
+                    );
+                    return Ok(());
+                }
+                TryInsertResult::Empty => {
+                    info!(
+                    unique_id = %msg.unique_id,
+                    "消息已存在但未插入，可能是数据库异常，跳过"
+                    );
+                    return Ok(());
+                }
             }
         }
 
@@ -86,11 +88,22 @@ impl MessageDispatcher {
             serde_json::to_vec(&response).map_err(|e| DispatchError::Serialize(e.to_string()))?;
 
         let topic = self.resp_topic(&msg.gateway_id);
-        self.state
-            .producer
-            .send_resp(&topic, &msg.unique_id, &resp_bytes)
-            .await
-            .map_err(DispatchError::Kafka)?;
+
+        if let Ok(pr) = &self.state.producer() {
+            pr.send_resp(&topic, &msg.unique_id, &resp_bytes)
+                .await
+                .map_err(DispatchError::Kafka)?;
+        } else {
+            log::error!("Kafka producer 未初始化，无法发送响应消息");
+        }
+        /* if let Some(producer) = &self.state.producer {
+            producer
+                .send_resp(&topic, &msg.unique_id, &resp_bytes)
+                .await
+                .map_err(DispatchError::Kafka)?;
+        } else {
+            log::error!("Kafka producer 未初始化，无法发送响应消息");
+        }*/
 
         Ok(())
     }
@@ -109,15 +122,16 @@ impl MessageDispatcher {
             ACTION_STATUS_NOTIFICATION => StatusNotificationRequest::handle(state, msg).await,
             ACTION_DATA_TRANSFER => DataTransferRequest::handle(state, msg).await,
 
-            _other => UnkonwnRequest::handle(state, msg).await,
+            _other => UnknownRequest::handle(state, msg).await,
         }
     }
 
     fn resp_topic(&self, gateway_id: &str) -> String {
-        format!(
-            "{}.resp.{}",
-            self.state.config.kafka.topic_prefix, gateway_id
-        )
+        if let Some(config) = &self.state.config {
+            format!("{}.resp.{}", config.kafka.topic_prefix, gateway_id)
+        } else {
+            format!("{}.resp.{}", "unknown_topic_prefix", gateway_id)
+        }
     }
 }
 

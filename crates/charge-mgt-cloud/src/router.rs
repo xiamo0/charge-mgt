@@ -35,24 +35,37 @@ use axum::{
     routing::{get, post},
 };
 
-use crate::handler::{
-    charge_connector, charge_point, charge_reservation, charge_transaction, identity, profile,
-    send_ocpp16_message,
-};
-
 /// 装配 v1 业务路由（nest 在 `/api/v1` 下）。
 pub fn build() -> Router {
     Router::new().nest("/api/v1", v1_routes())
 }
 
 fn v1_routes() -> Router {
+    let mut router = Router::new();
+    #[cfg(feature = "ocpp_1_6")]
+    {
+        router = router.merge(ocpp_1_6_route());
+    }
+    #[cfg(feature = "ocpp_2_0_1")]
+    {
+        router = router.merge(ocpp_2_0_1_route());
+    }
+    router
+}
+
+#[cfg(feature = "ocpp_2_0_1")]
+fn ocpp_2_0_1_route() -> Router {}
+#[cfg(feature = "ocpp_1_6")]
+fn ocpp_1_6_route() -> Router {
+    use crate::ocpp16::http_handler::{
+        charge_connector, charge_point, charge_reservation, charge_transaction, identity, profile,
+        send_ocpp16_message,
+    };
     Router::new()
-        // 发送报文
         .route(
-            "/send-ocpp16-message/:action",
+            "/send-ocpp-message/:action",
             post(send_ocpp16_message::send),
         )
-        // charge points
         .route(
             "/charge-points",
             get(charge_point::list).post(charge_point::create),

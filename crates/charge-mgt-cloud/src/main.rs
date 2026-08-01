@@ -9,8 +9,8 @@ use tracing::info;
 
 use charge_mgt_cloud::config::AppConfig;
 use charge_mgt_cloud::infra::db;
-use charge_mgt_cloud::infra::kafka::consumer::spawn_kafka_consumer;
-use charge_mgt_cloud::infra::kafka::producer::KafkaProducer;
+use charge_mgt_cloud::ocpp16::kafka::consumer::spawn_kafka_consumer;
+use charge_mgt_cloud::ocpp16::kafka::producer::KafkaProducer;
 use charge_mgt_cloud::router;
 use charge_mgt_cloud::state::AppState;
 
@@ -43,13 +43,16 @@ async fn main() -> anyhow::Result<()> {
     db::run_migrations(&db).await?;
     info!("已应用数据库迁移");
 
-    let producer = KafkaProducer::new(&config.kafka.brokers)?;
-
     let state = AppState {
-        config: config.clone(),
-        db,
-        producer,
+        config: Some(config.clone()),
+        db: Some(db),
+        producer: None,
     };
+    #[cfg(feature = "send_message_by_mq")]
+    {
+        let producer = KafkaProducer::new(&config.kafka.brokers)?;
+        state.producer = Some(producer);
+    }
 
     spawn_kafka_consumer(state.clone()).await?;
 
@@ -84,19 +87,35 @@ async fn root() -> Json<serde_json::Value> {
 }
 
 async fn health(Extension(state): Extension<Arc<AppState>>) -> Json<serde_json::Value> {
-    let db_ok = state.db.execute_unprepared("SELECT 1").await.is_ok();
-
-    let status = if db_ok { "ok" } else { "degraded" };
-    Json(serde_json::json!({
-        "status": status,
-        "service": "charge-mgt-cloud",
-        "version": env!("CARGO_PKG_VERSION"),
-        "cloud_id": state.config.cloud.id,
-        "components": {
-            "database": db_ok,
-            "kafka_producer": true
-        }
-    }))
+    let cloud_id = state
+        .config()
+        .map(|c| c.cloud.id.clone())
+        .unwrap_or("unknown".into());
+    if let Ok(db) = state.db() {
+        let db_ok = db.execute_unprepared("SELECT 1").await.is_ok();
+        let status = if db_ok { "ok" } else { "degraded" };
+        Json(serde_json::json!({
+            "status": status,
+            "service": "charge-mgt-cloud",
+            "version": env!("CARGO_PKG_VERSION"),
+            "cloud_id": cloud_id,
+            "components": {
+                "database": db_ok,
+                "kafka_producer": true
+            }
+        }))
+    } else {
+        Json(serde_json::json!({
+            "status": "degraded",
+            "service": "charge-mgt-cloud",
+            "version": env!("CARGO_PKG_VERSION"),
+            "cloud_id": cloud_id,
+            "components": {
+                "database": "not connected",
+                "kafka_producer": false
+            }
+        }))
+    }
 }
 
 fn mask_url(url: &str) -> String {

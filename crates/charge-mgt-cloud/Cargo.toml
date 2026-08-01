@@ -10,9 +10,12 @@ name = "charge_mgt_cloud"
 path = "src/main.rs"
 
 [features]
-default = ["cs_send_message_by_http", "cs_send_message_by_mq"]
-cs_send_message_by_http = []
-cs_send_message_by_mq = []
+default = ["send_message_by_http","ocpp_1_6"]
+send_message_by_http = []
+send_message_by_mq = []
+ocpp_1_6 = []
+ocpp_2_0_1 = []
+ocpp_2_1 = []
 
 [dependencies]
 tokio = { workspace = true }
