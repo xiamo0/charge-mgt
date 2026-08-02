@@ -8,13 +8,14 @@ pub mod start_transaction;
 pub mod status_notification;
 pub mod stop_transaction;
 
-use crate::ocpp16::error::HandlerError;
+use crate::error::AppError;
 use serde::Serialize;
+
 pub trait Handler<T: Serialize> {
     async fn handle(
         state: &crate::state::AppState,
         msg: &crate::ocpp16::envelope::CloudMessage,
-    ) -> Result<serde_json::Value, crate::ocpp16::error::HandlerError> {
+    ) -> Result<serde_json::Value, AppError> {
         let r = Self::handel_detail(state, msg).await?;
 
         Ok(serde_json::to_value(&r)?)
@@ -22,17 +23,18 @@ pub trait Handler<T: Serialize> {
     async fn handel_detail(
         state: &crate::state::AppState,
         msg: &crate::ocpp16::envelope::CloudMessage,
-    ) -> Result<T, crate::ocpp16::error::HandlerError>;
+    ) -> Result<T, AppError>;
 }
 pub struct UnknownRequest;
 impl Handler<String> for UnknownRequest {
     async fn handel_detail(
         _state: &crate::state::AppState,
         msg: &crate::ocpp16::envelope::CloudMessage,
-    ) -> Result<std::string::String, crate::ocpp16::error::HandlerError> {
+    ) -> Result<std::string::String, AppError> {
         let action = msg.action.as_str();
-        Err(HandlerError::NotSupported(format!(
-            "action '{action}' not implemented"
-        )))
+        Err(AppError::OCPP_1_6_ERROR {
+            action: action.into(),
+            detail: "action not implemented".into(),
+        })
     }
 }

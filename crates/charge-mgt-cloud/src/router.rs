@@ -50,11 +50,21 @@ fn v1_routes() -> Router {
     {
         router = router.merge(ocpp_2_0_1_route());
     }
+    #[cfg(feature = "ocpp_2_1")]
+    {
+        router = router.merge(ocpp_2_1_route());
+    }
     router
 }
 
 #[cfg(feature = "ocpp_2_0_1")]
-fn ocpp_2_0_1_route() -> Router {}
+fn ocpp_2_0_1_route() -> Router {
+    Router::new()
+}
+#[cfg(feature = "ocpp_2_1")]
+fn ocpp_2_1_route() -> Router {
+    Router::new()
+}
 #[cfg(feature = "ocpp_1_6")]
 fn ocpp_1_6_route() -> Router {
     use crate::ocpp16::http_handler::{

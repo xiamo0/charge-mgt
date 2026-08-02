@@ -9,8 +9,7 @@ use tracing::info;
 
 use charge_mgt_cloud::config::AppConfig;
 use charge_mgt_cloud::infra::db;
-use charge_mgt_cloud::ocpp16::kafka::consumer::spawn_kafka_consumer;
-use charge_mgt_cloud::ocpp16::kafka::producer::KafkaProducer;
+
 use charge_mgt_cloud::router;
 use charge_mgt_cloud::state::AppState;
 
@@ -43,18 +42,15 @@ async fn main() -> anyhow::Result<()> {
     db::run_migrations(&db).await?;
     info!("已应用数据库迁移");
 
-    let state = AppState {
-        config: Some(config.clone()),
-        db: Some(db),
-        producer: None,
-    };
-    #[cfg(feature = "send_message_by_mq")]
+    let mut state = AppState::new(config.clone(), db.clone());
+    #[cfg(all(feature = "message_by_mq", feature = "ocpp_1_6"))]
     {
+        use charge_mgt_cloud::ocpp16::kafka::consumer::spawn_kafka_consumer;
+        use charge_mgt_cloud::ocpp16::kafka::producer::KafkaProducer;
         let producer = KafkaProducer::new(&config.kafka.brokers)?;
-        state.producer = Some(producer);
+        state = state.with_producer(producer);
+        spawn_kafka_consumer(state.clone()).await?;
     }
-
-    spawn_kafka_consumer(state.clone()).await?;
 
     let app = build_router(state);
 

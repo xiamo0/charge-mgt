@@ -22,11 +22,13 @@ use axum::response::{IntoResponse, Response};
 use sea_orm::{ColIdx, DbErr};
 
 use crate::ocpp16::dto::common::ApiResponse;
-use crate::ocpp16::error::HandlerError;
 
 /// 应用层统一错误类型。
 #[derive(Debug, thiserror::Error)]
 pub enum AppError {
+    #[error("{action} error detail {detail}")]
+    OCPP_1_6_ERROR { action: String, detail: String },
+
     #[error("{0} config not initialized")]
     ConfigNotInitialized(String),
     /// 资源不存在（如主键查询无果）；HTTP 404。
@@ -52,9 +54,6 @@ pub enum AppError {
     /// serde_json 反/序列化错误；HTTP 400。
     #[error("json error: {0}")]
     Json(#[from] serde_json::Error),
-
-    #[error("json error: {0}")]
-    Handler(#[from] HandlerError),
 }
 
 impl AppError {
@@ -77,6 +76,11 @@ impl AppError {
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let (status, code, message) = match &self {
+            Self::OCPP_1_6_ERROR { action, detail } => (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                500,
+                format!("OCPP 1.6 error: action: {}, detail: {}", action, detail),
+            ),
             Self::ConfigNotInitialized(msg) => (
                 axum::http::StatusCode::INTERNAL_SERVER_ERROR,
                 500,
@@ -96,11 +100,6 @@ impl IntoResponse for AppError {
                 e.to_string(),
             ),
             Self::Json(e) => (axum::http::StatusCode::BAD_REQUEST, 400, e.to_string()),
-            Self::Handler(e) => (
-                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                500,
-                e.to_string(),
-            ),
         };
         let body = Json(ApiResponse::<()>::error(code, message));
         (status, body).into_response()

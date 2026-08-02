@@ -1,5 +1,5 @@
+use crate::error::AppError;
 use crate::ocpp16::envelope::CloudMessage;
-use crate::ocpp16::error::HandlerError;
 use crate::state::AppState;
 use serde::Serialize;
 
@@ -27,29 +27,31 @@ pub trait Handler<T: Serialize> {
     async fn handle(
         state: &crate::state::AppState,
         msg: &crate::ocpp16::envelope::CloudMessage,
-    ) -> Result<serde_json::Value, HandlerError> {
+    ) -> Result<serde_json::Value, AppError> {
         let r = Self::handle_detail(state, msg).await?;
 
         Ok(serde_json::to_value(&r)?)
     }
 
-    async fn handle_detail(state: &AppState, msg: &CloudMessage) -> Result<T, HandlerError>;
+    async fn handle_detail(state: &AppState, msg: &CloudMessage) -> Result<T, AppError>;
 }
 pub struct UnknownRequest;
 impl Handler<String> for UnknownRequest {
-    #[cfg(feature = "send_message_by_http")]
-    async fn handle_detail(_state: &AppState, msg: &CloudMessage) -> Result<String, HandlerError> {
+    #[cfg(feature = "message_by_http")]
+    async fn handle_detail(_state: &AppState, msg: &CloudMessage) -> Result<String, AppError> {
         let action = msg.action.as_str();
-        Err(HandlerError::NotSupported(format!(
-            "action '{action}' not implemented"
-        )))
+        Err(AppError::OCPP_1_6_ERROR {
+            action: action.to_string(),
+            detail: "not implemented".to_string(),
+        })
     }
 
-    #[cfg(feature = "send_message_by_mq")]
-    async fn handle_detail(_state: &AppState, msg: &CloudMessage) -> Result<String, HandlerError> {
+    #[cfg(feature = "message_by_mq")]
+    async fn handle_detail(_state: &AppState, msg: &CloudMessage) -> Result<String, AppError> {
         let action = msg.action.as_str();
-        Err(HandlerError::NotSupported(format!(
-            "action '{action}' not implemented"
-        )))
+        Err(AppError::OCPP_1_6_ERROR {
+            action: action.to_string(),
+            detail: "not implemented".to_string(),
+        })
     }
 }

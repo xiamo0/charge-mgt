@@ -1,8 +1,8 @@
 use crate::ocpp16::entity::sent_messages;
 use crate::ocpp16::envelope::CloudMessage;
-use crate::ocpp16::error::HandlerError;
 use crate::ocpp16::message_from_cp_handler::{Handler, UnknownRequest};
 use crate::state::AppState;
+use AppError;
 use chrono::Local;
 use ocpp_1_6::calls::{
     AuthorizeRequest, BootNotificationRequest, DataTransferRequest, HeartbeatRequest,
@@ -111,7 +111,7 @@ impl MessageDispatcher {
     async fn route_handler(
         state: &AppState,
         msg: &CloudMessage,
-    ) -> Result<serde_json::Value, HandlerError> {
+    ) -> Result<serde_json::Value, AppError> {
         match msg.action.as_str() {
             ACTION_BOOT_NOTIFICATION => BootNotificationRequest::handle(state, msg).await,
             ACTION_HEARTBEAT => HeartbeatRequest::handle(state, msg).await,

@@ -1,9 +1,10 @@
+use crate::error::AppError;
 use crate::ocpp16::entity::charge_point::{Column as ChargePointColumn, Entity as ChargePoints};
 use crate::ocpp16::envelope::CloudMessage;
-use crate::ocpp16::error::HandlerError;
 use crate::ocpp16::message_from_cp_handler::Handler;
 use crate::state::AppState;
 use chrono::Utc;
+use ocpp_1_6::ACTION_BOOT_NOTIFICATION_CONFIRMATION;
 use ocpp_1_6::calls::BootNotificationRequest;
 use ocpp_1_6::confs::BootNotificationConfirmation;
 use sea_orm::*;
@@ -13,26 +14,34 @@ impl Handler<BootNotificationConfirmation> for BootNotificationRequest {
     async fn handel_detail(
         state: &crate::state::AppState,
         msg: &crate::ocpp16::envelope::CloudMessage,
-    ) -> Result<BootNotificationConfirmation, crate::ocpp16::error::HandlerError> {
+    ) -> Result<BootNotificationConfirmation, AppError> {
         let req: BootNotificationRequest = serde_json::from_value(msg.payload.clone())?;
 
         if req.charge_point_vendor.len() > 20 {
-            return Err(HandlerError::FormationViolation(
-                "chargePointVendor must be <= 20 characters".into(),
-            ));
+            return Err(AppError::OCPP_1_6_ERROR {
+                action: ACTION_BOOT_NOTIFICATION_CONFIRMATION.to_string(),
+                detail: ">20".to_string(),
+            });
         }
         if req.charge_point_model.len() > 20 {
-            return Err(HandlerError::FormationViolation(
-                "chargePointModel must be <= 20 characters".into(),
-            ));
+            return Err(AppError::OCPP_1_6_ERROR {
+                action: ACTION_BOOT_NOTIFICATION_CONFIRMATION.to_string(),
+                detail: "chargePointModel must be <= 20 characters".into(),
+            });
         }
 
-        let charge_point_serial_number = req.charge_point_serial_number.ok_or_else(|| {
-            HandlerError::FormationViolation("charge_point_serial_number must not null".into())
-        })?;
-        let charge_box_serial_number = req.charge_box_serial_number.ok_or_else(|| {
-            HandlerError::FormationViolation("charge_box_serial_number must not null".into())
-        })?;
+        let charge_point_serial_number =
+            req.charge_point_serial_number
+                .ok_or_else(|| AppError::OCPP_1_6_ERROR {
+                    action: ACTION_BOOT_NOTIFICATION_CONFIRMATION.to_string(),
+                    detail: "charge_point_serial_number must not null".to_string(),
+                })?;
+        let charge_box_serial_number =
+            req.charge_box_serial_number
+                .ok_or_else(|| AppError::OCPP_1_6_ERROR {
+                    action: ACTION_BOOT_NOTIFICATION_CONFIRMATION.to_string(),
+                    detail: "charge_box_serial_number must not null".to_string(),
+                })?;
 
         if let Ok(db) = state.db() {
             ChargePoints::find()
@@ -47,10 +56,10 @@ impl Handler<BootNotificationConfirmation> for BootNotificationRequest {
                 .filter(ChargePointColumn::IsDeleted.eq(0_i16))
                 .one(db)
                 .await?
-                .ok_or_else(|| {
-                    HandlerError::FormationViolation(
-                        "charge_point_serial_number or charge_box_serial_number not exists".into(),
-                    )
+                .ok_or_else(|| AppError::OCPP_1_6_ERROR {
+                    action: ACTION_BOOT_NOTIFICATION_CONFIRMATION.to_string(),
+                    detail: "charge_point_serial_number or charge_box_serial_number not exists"
+                        .to_string(),
                 })?;
         } else {
             log::error!("db not exists");
@@ -62,29 +71,34 @@ impl Handler<BootNotificationConfirmation> for BootNotificationRequest {
     }
 }
 
-pub async fn handle(
-    state: &AppState,
-    msg: &CloudMessage,
-) -> Result<serde_json::Value, HandlerError> {
+pub async fn handle(state: &AppState, msg: &CloudMessage) -> Result<serde_json::Value, AppError> {
     let req: BootNotificationRequest = serde_json::from_value(msg.payload.clone())?;
 
     if req.charge_point_vendor.len() > 20 {
-        return Err(HandlerError::FormationViolation(
-            "chargePointVendor must be <= 20 characters".into(),
-        ));
+        return Err(AppError::OCPP_1_6_ERROR {
+            action: ACTION_BOOT_NOTIFICATION_CONFIRMATION.to_string(),
+            detail: "chargePointVendor must be <= 20 characters".to_string(),
+        });
     }
     if req.charge_point_model.len() > 20 {
-        return Err(HandlerError::FormationViolation(
-            "chargePointModel must be <= 20 characters".into(),
-        ));
+        return Err(AppError::OCPP_1_6_ERROR {
+            action: ACTION_BOOT_NOTIFICATION_CONFIRMATION.to_string(),
+            detail: "chargePointModel must be <= 20 characters".to_string(),
+        });
     }
 
-    let charge_point_serial_number = req.charge_point_serial_number.ok_or_else(|| {
-        HandlerError::FormationViolation("charge_point_serial_number must not null".into())
-    })?;
-    let charge_box_serial_number = req.charge_box_serial_number.ok_or_else(|| {
-        HandlerError::FormationViolation("charge_box_serial_number must not null".into())
-    })?;
+    let charge_point_serial_number =
+        req.charge_point_serial_number
+            .ok_or_else(|| AppError::OCPP_1_6_ERROR {
+                action: ACTION_BOOT_NOTIFICATION_CONFIRMATION.to_string(),
+                detail: "charge_point_serial_number must not null".to_string(),
+            })?;
+    let charge_box_serial_number =
+        req.charge_box_serial_number
+            .ok_or_else(|| AppError::OCPP_1_6_ERROR {
+                action: ACTION_BOOT_NOTIFICATION_CONFIRMATION.to_string(),
+                detail: "charge_box_serial_number must not null".to_string(),
+            })?;
 
     if let Ok(db) = state.db() {
         ChargePoints::find()
@@ -99,10 +113,9 @@ pub async fn handle(
             .filter(ChargePointColumn::IsDeleted.eq(0_i16))
             .one(db)
             .await?
-            .ok_or_else(|| {
-                HandlerError::FormationViolation(
-                    "charge_point_serial_number or charge_box_serial_number not exists".into(),
-                )
+            .ok_or_else(|| AppError::OCPP_1_6_ERROR {
+                action: ACTION_BOOT_NOTIFICATION_CONFIRMATION.to_string(),
+                detail: "charge_point_serial_number must not null".to_string(),
             })?;
     } else {
         log::error!("db not exists");

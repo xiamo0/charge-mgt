@@ -1,3 +1,4 @@
+use crate::error::AppError;
 use crate::ocpp16::entity::charge_point::{Column as CpColumn, Entity as ChargePoints};
 use crate::ocpp16::message_from_cp_handler::Handler;
 use chrono::Local;
@@ -11,7 +12,7 @@ impl Handler<HeartbeatConfirmation> for HeartbeatRequest {
     async fn handel_detail(
         state: &crate::state::AppState,
         msg: &crate::ocpp16::envelope::CloudMessage,
-    ) -> Result<HeartbeatConfirmation, crate::ocpp16::error::HandlerError> {
+    ) -> Result<HeartbeatConfirmation, AppError> {
         // 新 schema 的 charge_point 表没有独立的 last_heartbeat_at 列，
         // 仅在 update_time 中体现心跳时间戳。
         let now = Local::now().naive_local();
