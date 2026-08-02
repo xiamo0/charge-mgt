@@ -25,8 +25,8 @@ pub mod update_firmware;
 
 pub trait Handler<T: Serialize> {
     async fn handle(
-        state: &crate::state::AppState,
-        msg: &crate::ocpp16::envelope::CloudMessage,
+        state: &AppState,
+        msg: &CloudMessage,
     ) -> Result<serde_json::Value, AppError> {
         let r = Self::handle_detail(state, msg).await?;
 

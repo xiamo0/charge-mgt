@@ -2,7 +2,6 @@ use crate::ocpp16::entity::sent_messages;
 use crate::ocpp16::envelope::CloudMessage;
 use crate::ocpp16::message_from_cp_handler::{Handler, UnknownRequest};
 use crate::state::AppState;
-use AppError;
 use chrono::Local;
 use ocpp_1_6::calls::{
     AuthorizeRequest, BootNotificationRequest, DataTransferRequest, HeartbeatRequest,
@@ -15,6 +14,7 @@ use ocpp_1_6::protocol::{
 };
 use sea_orm::{EntityTrait, Set, TryInsertResult};
 use tracing::{info, log, warn};
+use crate::error::AppError;
 
 pub struct MessageDispatcher {
     state: AppState,
@@ -25,9 +25,12 @@ impl MessageDispatcher {
         Self { state }
     }
 
-    pub async fn dispatch(&self, bytes: &[u8]) -> Result<(), DispatchError> {
+    pub async fn dispatch(&self, bytes: &[u8]) -> Result<(), AppError> {
         let msg: CloudMessage =
-            serde_json::from_slice(bytes).map_err(|e| DispatchError::Malformed(e.to_string()))?;
+            serde_json::from_slice(bytes).map_err(|e| AppError::OCPP_1_6_ERROR{
+                action:"mq".to_string(),
+                detail:e.to_string()
+            })?;
 
         let new_message = sent_messages::ActiveModel {
             unique_id: Set(msg.unique_id.clone()),
@@ -45,7 +48,10 @@ impl MessageDispatcher {
                 .on_conflict_do_nothing()
                 .exec(db)
                 .await
-                .map_err(|e| DispatchError::Database(e.to_string()))?;
+                .map_err(|e| AppError::OCPP_1_6_ERROR {
+                    action: "mq".to_string(),
+                    detail: e.to_string()
+                })?;
 
             match res {
                 TryInsertResult::Inserted(keys) => {
@@ -73,26 +79,25 @@ impl MessageDispatcher {
         let response = match handler_result {
             Ok(payload) => msg.new_call_result(payload),
             Err(e) => {
-                let (code, desc) = e.to_ocpp_error();
-                warn!(
-                    action = %msg.action,
-                    unique_id = %msg.unique_id,
-                    error_code = %code,
-                    "handler 返回 CallError"
-                );
-                msg.new_call_error(code, &desc)
+               msg.new_call_error("InternalError", &format!("处理消息失败: {}", e))
             }
         };
 
         let resp_bytes =
-            serde_json::to_vec(&response).map_err(|e| DispatchError::Serialize(e.to_string()))?;
+            serde_json::to_vec(&response).map_err(|e| AppError::OCPP_1_6_ERROR {
+                action: "mq".to_string(),
+                detail: e.to_string()
+            })?;
 
         let topic = self.resp_topic(&msg.gateway_id);
 
-        if let Ok(pr) = &self.state.producer() {
+        if let Ok(pr) = self.state.producer() {
             pr.send_resp(&topic, &msg.unique_id, &resp_bytes)
                 .await
-                .map_err(DispatchError::Kafka)?;
+                .map_err(|e| AppError::OCPP_1_6_ERROR {
+                    action: "mq".to_string(),
+                    detail: e.to_string()
+                })?;
         } else {
             log::error!("Kafka producer 未初始化，无法发送响应消息");
         }
@@ -133,16 +138,4 @@ impl MessageDispatcher {
             format!("{}.resp.{}", "unknown_topic_prefix", gateway_id)
         }
     }
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum DispatchError {
-    #[error("消息格式错误：{0}")]
-    Malformed(String),
-    #[error("数据库错误：{0}")]
-    Database(String),
-    #[error("序列化错误：{0}")]
-    Serialize(String),
-    #[error("Kafka 发送错误：{0}")]
-    Kafka(String),
 }

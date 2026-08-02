@@ -10,7 +10,7 @@ name = "charge_mgt_cloud"
 path = "src/main.rs"
 
 [features]
-default = ["message_by_mq","ocpp_1_6"]
+default = ["message_by_http","ocpp_1_6"]
 message_by_http = []
 message_by_mq = []
 ocpp_1_6 = []

@@ -2,6 +2,7 @@
 use std::time::Duration;
 use anyhow::Result;
 use reqwest::Client;
+use crate::error::AppError;
 
 #[derive(Clone)]
 pub struct HttpSender {
@@ -22,21 +23,19 @@ impl HttpSender {
     pub async fn post_ocpp(
         &self,
         gateway_http_url: &str,
-        charge_point_id: &str,
-        payload: &[u8],
-    ) -> Result<Vec<u8>> {
-        let url = format!("{}/ocpp/{}", gateway_http_url.trim_end_matches('/'), charge_point_id);
+        payload: &serde_json::Value,
+    ) -> Result<serde_json::Value, AppError> {
         let resp = self.client
-            .post(&url)
+            .post(gateway_http_url)
             .header("Content-Type", "application/json")
-            .body(payload.to_vec())
+            .json(payload)
             .send()
-            .await?;
+            .await.map_err(|e| AppError::OCPP_1_6_ERROR { action: "OCPP HTTP 发送失败".to_string(), detail: e.to_string() })?;
         let status = resp.status();
-        let body = resp.bytes().await?;
+        let body = resp.json().await.map_err(|e| AppError::OCPP_1_6_ERROR { action: "OCPP HTTP 发送失败".to_string(), detail: e.to_string() })?;
         if !status.is_success() {
-            anyhow::bail!("OCPP HTTP 发送失败 {}: {}", status, String::from_utf8_lossy(&body));
+            return Err(AppError::OCPP_1_6_ERROR { action: "OCPP HTTP 发送失败".to_string(), detail: format!("OCPP HTTP 发送失败 {}: {:?}", status, body) });
         }
-        Ok(body.to_vec())
+        Ok(body)
     }
 }

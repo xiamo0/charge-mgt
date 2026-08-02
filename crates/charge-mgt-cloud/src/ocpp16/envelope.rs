@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CloudMessage {
+    pub http_url: String,
     pub gateway_id: String,
     pub gateway_ip: String,
     pub vendor: String,
@@ -22,6 +23,7 @@ pub struct CloudMessage {
 impl CloudMessage {
     pub fn new_call_result(&self, payload: serde_json::Value) -> Self {
         Self {
+            http_url: self.http_url.clone(),
             gateway_id: self.gateway_id.clone(),
             gateway_ip: self.gateway_ip.clone(),
             vendor: self.vendor.clone(),
@@ -39,6 +41,7 @@ impl CloudMessage {
 
     pub fn new_call_error(&self, error_code: &str, error_description: &str) -> Self {
         Self {
+            http_url: self.http_url.clone(),
             gateway_id: self.gateway_id.clone(),
             gateway_ip: self.gateway_ip.clone(),
             vendor: self.vendor.clone(),

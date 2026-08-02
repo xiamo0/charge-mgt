@@ -9,11 +9,11 @@ pub const OCPP_VERSION: &str = "1.6";
 
 // 消息类型 ID（用于消息首位标识）
 /// CALL 消息类型 ID（请求）
-pub const CALL: i32 = 2;
+pub const CALL: i64 = 2;
 /// CALLRESULT 消息类型 ID（成功响应）
-pub const CALLRESULT: i32 = 3;
+pub const CALLRESULT: i64 = 3;
 /// CALLERROR 消息类型 ID（错误响应）
-pub const CALLERROR: i32 = 4;
+pub const CALLERROR: i64 = 4;
 
 // 操作名称：常用的 OCPP 操作字符串常量，便于避免魔法字符串
 pub const ACTION_AUTHORIZE: &str = "Authorize";
