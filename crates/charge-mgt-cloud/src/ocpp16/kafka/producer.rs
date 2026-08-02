@@ -34,4 +34,14 @@ impl KafkaProducer {
             Err((e, _)) => Err(format!("Kafka 发送失败：{e}")),
         }
     }
+
+    /// 发送 OCPP CALL 报文到 req topic，`key` 用 unique_id 保证 partition 亲和。
+    pub async fn send_call(
+        &self,
+        topic: &str,
+        unique_id: &str,
+        payload: &[u8],
+    ) -> Result<(), String> {
+        self.send_resp(topic, unique_id, payload).await
+    }
 }

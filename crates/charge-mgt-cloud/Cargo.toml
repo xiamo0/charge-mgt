@@ -10,7 +10,7 @@ name = "charge_mgt_cloud"
 path = "src/main.rs"
 
 [features]
-default = ["message_by_http","ocpp_1_6"]
+default = ["message_by_mq","ocpp_1_6"]
 message_by_http = []
 message_by_mq = []
 ocpp_1_6 = []
@@ -41,12 +41,15 @@ migration = { path = "migration" }
 # Kafka（复用 gateway 的版本，保证消息体互操作）
 rdkafka = { version = "0.36", features = ["cmake-build"] }
 futures = { version = "0.3", default-features = false, features = ["std"] }
+dashmap = { workspace = true }
 
 # 配置加载
 config = "0.14"
 
 # 错误处理（anyhow for application-level errors; thiserror for typed errors）
 anyhow = "1"
+
+reqwest = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true }

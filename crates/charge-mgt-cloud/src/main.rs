@@ -9,7 +9,7 @@ use tracing::info;
 
 use charge_mgt_cloud::config::AppConfig;
 use charge_mgt_cloud::infra::db;
-
+use charge_mgt_cloud::infra::http_client::HttpSender;
 use charge_mgt_cloud::router;
 use charge_mgt_cloud::state::AppState;
 
@@ -41,14 +41,25 @@ async fn main() -> anyhow::Result<()> {
 
     db::run_migrations(&db).await?;
     info!("已应用数据库迁移");
+    
+    let http_sender = HttpSender::new().map_err(|e| anyhow::anyhow!("初始化 HttpSender 失败: {}", e))?;
 
-    let mut state = AppState::new(config.clone(), db.clone());
+    let mut state = AppState::new(config.clone(), db.clone(),http_sender);
     #[cfg(all(feature = "message_by_mq", feature = "ocpp_1_6"))]
     {
         use charge_mgt_cloud::ocpp16::kafka::consumer::spawn_kafka_consumer;
+        use charge_mgt_cloud::ocpp16::kafka::mq_dispatcher::MqDispatcher;
         use charge_mgt_cloud::ocpp16::kafka::producer::KafkaProducer;
         let producer = KafkaProducer::new(&config.kafka.brokers)?;
-        state = state.with_producer(producer);
+        // resp 与 req 必须用不同 consumer group，否则会争抢同一 partition 的 offset
+        let resp_group = format!("{}-resp", config.kafka.consumer_group);
+        let mq_dispatcher = MqDispatcher::spawn(
+            &config.kafka.brokers,
+            &resp_group,
+            &config.kafka.topic_prefix,
+            Vec::new(),
+        )?;
+        state = state.with_producer(producer).with_mq_dispatcher(mq_dispatcher);
         spawn_kafka_consumer(state.clone()).await?;
     }
 
