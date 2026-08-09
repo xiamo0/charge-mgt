@@ -31,13 +31,25 @@ pub mod update_firmware;
 pub const MQ_RESP_TIMEOUT: Duration = Duration::from_secs(10);
 
 pub trait Handler<T: Serialize> {
-    async fn handle(state: &AppState, msg: &CloudMessage) -> Result<serde_json::Value, AppError> {
-        let r = Self::handle_detail(state, msg).await?;
-
+    /// HTTP 出站入口：`handle_detail_http` + 序列化为 `serde_json::Value`。
+    #[cfg(feature = "message_by_http")]
+    async fn handle_http(state: &AppState, msg: &CloudMessage) -> Result<serde_json::Value, AppError> {
+        let r = Self::handle_detail_http(state, msg).await?;
         Ok(serde_json::to_value(&r)?)
     }
 
-    async fn handle_detail(state: &AppState, msg: &CloudMessage) -> Result<T, AppError>;
+    /// MQ 出站入口：`handle_detail_mq` + 序列化为 `serde_json::Value`。
+    #[cfg(feature = "message_by_mq")]
+    async fn handle_mq(state: &AppState, msg: &CloudMessage) -> Result<serde_json::Value, AppError> {
+        let r = Self::handle_detail_mq(state, msg).await?;
+        Ok(serde_json::to_value(&r)?)
+    }
+
+    #[cfg(feature = "message_by_http")]
+    async fn handle_detail_http(state: &AppState, msg: &CloudMessage) -> Result<T, AppError>;
+
+    #[cfg(feature = "message_by_mq")]
+    async fn handle_detail_mq(state: &AppState, msg: &CloudMessage) -> Result<T, AppError>;
 }
 
 /// MQ 出站通用流程：组装 CALL → 发到 req topic → 等 resp topic 回 CALLRESULT → 反序列化为 `T`。
@@ -182,7 +194,7 @@ where
 pub struct UnknownRequest;
 impl Handler<String> for UnknownRequest {
     #[cfg(feature = "message_by_http")]
-    async fn handle_detail(_state: &AppState, msg: &CloudMessage) -> Result<String, AppError> {
+    async fn handle_detail_http(_state: &AppState, msg: &CloudMessage) -> Result<String, AppError> {
         let action = msg.action.as_str();
         Err(AppError::OCPP_1_6_ERROR {
             action: action.to_string(),
@@ -191,7 +203,7 @@ impl Handler<String> for UnknownRequest {
     }
 
     #[cfg(feature = "message_by_mq")]
-    async fn handle_detail(_state: &AppState, msg: &CloudMessage) -> Result<String, AppError> {
+    async fn handle_detail_mq(_state: &AppState, msg: &CloudMessage) -> Result<String, AppError> {
         let action = msg.action.as_str();
         Err(AppError::OCPP_1_6_ERROR {
             action: action.to_string(),

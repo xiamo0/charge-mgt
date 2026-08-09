@@ -13,7 +13,7 @@ use ocpp_1_6::confs::GetLocalListVersionConfirmation;
 
 impl Handler<GetLocalListVersionConfirmation> for GetLocalListVersionRequest {
     #[cfg(feature = "message_by_http")]
-    async fn handle_detail(
+    async fn handle_detail_http(
         state: &AppState,
         msg: &CloudMessage,
     ) -> Result<GetLocalListVersionConfirmation, AppError> {
@@ -21,7 +21,7 @@ impl Handler<GetLocalListVersionConfirmation> for GetLocalListVersionRequest {
     }
 
     #[cfg(feature = "message_by_mq")]
-    async fn handle_detail(
+    async fn handle_detail_mq(
         state: &AppState,
         msg: &CloudMessage,
     ) -> Result<GetLocalListVersionConfirmation, AppError> {

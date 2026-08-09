@@ -30,88 +30,84 @@ pub async fn send(
     Path(action): Path<String>,
     Json(req): Json<CloudMessage>,
 ) -> Result<impl IntoResponse, AppError> {
-    let response = match action.as_str() {
-        ACTION_CANCEL_RESERVATION => {
-            let data = CancelReservationRequest::handle(&state, &req).await?;
-            ApiResponse::ok(data)
-        }
-        ACTION_CHANGE_AVAILABILITY => {
-            // Handle call result action
-            let data = ChangeAvailabilityRequest::handle(&state, &req).await?;
-            ApiResponse::ok(data)
-        }
-        ACTION_CHANGE_CONFIGURATION => {
-            let data = ChangeConfigurationRequest::handle(&state, &req).await?;
-            ApiResponse::ok(data)
-        }
-        ACTION_CLEAR_CACHE => {
-            let data = ClearCacheRequest::handle(&state, &req)
+    #[cfg(feature = "message_by_http")]
+    {
+        let response = dispatch_http(&action, &state, &req).await?;
+        return Ok(Json(response));
+    }
+    #[cfg(feature = "message_by_mq")]
+    {
+        let response = dispatch_mq(&action, &state, &req).await?;
+        return Ok(Json(response));
+    }
+    #[allow(unreachable_code)]
+    Err(AppError::ConfigNotInitialized(
+        "neither message_by_http nor message_by_mq feature is enabled".into(),
+    ))
+}
+
+#[cfg(feature = "message_by_http")]
+async fn dispatch_http(
+    action: &str,
+    state: &Arc<AppState>,
+    req: &CloudMessage,
+) -> Result<ApiResponse<serde_json::Value>, AppError> {
+    Ok(match action {
+        ACTION_CANCEL_RESERVATION => ApiResponse::ok(CancelReservationRequest::handle_http(state, req).await?),
+        ACTION_CHANGE_AVAILABILITY => ApiResponse::ok(ChangeAvailabilityRequest::handle_http(state, req).await?),
+        ACTION_CHANGE_CONFIGURATION => ApiResponse::ok(ChangeConfigurationRequest::handle_http(state, req).await?),
+        ACTION_CLEAR_CACHE => ApiResponse::ok(
+            ClearCacheRequest::handle_http(state, req)
                 .map_err(|e| AppError::BadRequest(e.to_string()))
-                .await?;
-            ApiResponse::ok(data)
-        }
-        ACTION_CLEAR_CHARGING_PROFILE => {
-            let data = ClearChargingProfileRequest::handle(&state, &req).await?;
-            ApiResponse::ok(data)
-        }
-        ACTION_DATA_TRANSFER => {
-            let data = DataTransferRequest::handle(&state, &req).await?;
-            ApiResponse::ok(data)
-        }
-        ACTION_GET_COMPOSITE_SCHEDULE => {
-            let data = GetCompositeScheduleRequest::handle(&state, &req).await?;
-            ApiResponse::ok(data)
-        }
-        ACTION_GET_CONFIGURATION => {
-            let data = GetConfigurationRequest::handle(&state, &req).await?;
-            ApiResponse::ok(data)
-        }
-        ACTION_GET_DIAGNOSTICS => {
-            let data = GetDiagnosticsRequest::handle(&state, &req).await?;
-            ApiResponse::ok(data)
-        }
-        ACTION_GET_LOCAL_LIST_VERSION => {
-            let data = GetLocalListVersionRequest::handle(&state, &req).await?;
-            ApiResponse::ok(data)
-        }
-        ACTION_REMOTE_STOP_TRANSACTION => {
-            let data = RemoteStopTransactionRequest::handle(&state, &req).await?;
-            ApiResponse::ok(data)
-        }
-        ACTION_REMOTE_START_TRANSACTION => {
-            let data = RemoteStartTransactionRequest::handle(&state, &req).await?;
-            ApiResponse::ok(data)
-        }
-        ACTION_RESERVE_NOW => {
-            let data = ReserveNowRequest::handle(&state, &req).await?;
-            ApiResponse::ok(data)
-        }
-        ACTION_SEND_LOCAL_LIST => {
-            let data = SendLocalListRequest::handle(&state, &req).await?;
-            ApiResponse::ok(data)
-        }
-        ACTION_SET_CHARGING_PROFILE => {
-            let data = SetChargingProfileRequest::handle(&state, &req).await?;
-            ApiResponse::ok(data)
-        }
+                .await?,
+        ),
+        ACTION_CLEAR_CHARGING_PROFILE => ApiResponse::ok(ClearChargingProfileRequest::handle_http(state, req).await?),
+        ACTION_DATA_TRANSFER => ApiResponse::ok(DataTransferRequest::handle_http(state, req).await?),
+        ACTION_GET_COMPOSITE_SCHEDULE => ApiResponse::ok(GetCompositeScheduleRequest::handle_http(state, req).await?),
+        ACTION_GET_CONFIGURATION => ApiResponse::ok(GetConfigurationRequest::handle_http(state, req).await?),
+        ACTION_GET_DIAGNOSTICS => ApiResponse::ok(GetDiagnosticsRequest::handle_http(state, req).await?),
+        ACTION_GET_LOCAL_LIST_VERSION => ApiResponse::ok(GetLocalListVersionRequest::handle_http(state, req).await?),
+        ACTION_REMOTE_STOP_TRANSACTION => ApiResponse::ok(RemoteStopTransactionRequest::handle_http(state, req).await?),
+        ACTION_REMOTE_START_TRANSACTION => ApiResponse::ok(RemoteStartTransactionRequest::handle_http(state, req).await?),
+        ACTION_RESERVE_NOW => ApiResponse::ok(ReserveNowRequest::handle_http(state, req).await?),
+        ACTION_SEND_LOCAL_LIST => ApiResponse::ok(SendLocalListRequest::handle_http(state, req).await?),
+        ACTION_SET_CHARGING_PROFILE => ApiResponse::ok(SetChargingProfileRequest::handle_http(state, req).await?),
+        ACTION_TRIGGER_MESSAGE => ApiResponse::ok(TriggerMessageRequest::handle_http(state, req).await?),
+        ACTION_UNLOCK_CONNECTOR => ApiResponse::ok(UnlockConnectorRequest::handle_http(state, req).await?),
+        ACTION_UPDATE_FIRMWARE => ApiResponse::ok(UpdateFirmwareRequest::handle_http(state, req).await?),
+        _ => ApiResponse::ok(UnknownRequest::handle_http(state, req).await?),
+    })
+}
 
-        ACTION_TRIGGER_MESSAGE => {
-            let data = TriggerMessageRequest::handle(&state, &req).await?;
-            ApiResponse::ok(data)
-        }
-        ACTION_UNLOCK_CONNECTOR => {
-            let data = UnlockConnectorRequest::handle(&state, &req).await?;
-            ApiResponse::ok(data)
-        }
-        ACTION_UPDATE_FIRMWARE => {
-            let data = UpdateFirmwareRequest::handle(&state, &req).await?;
-            ApiResponse::ok(data)
-        }
-        _ => {
-            let data = UnknownRequest::handle(&state, &req).await?;
-            ApiResponse::ok(data)
-        }
-    };
-
-    Ok(Json(response))
+#[cfg(feature = "message_by_mq")]
+async fn dispatch_mq(
+    action: &str,
+    state: &Arc<AppState>,
+    req: &CloudMessage,
+) -> Result<ApiResponse<serde_json::Value>, AppError> {
+    Ok(match action {
+        ACTION_CANCEL_RESERVATION => ApiResponse::ok(CancelReservationRequest::handle_mq(state, req).await?),
+        ACTION_CHANGE_AVAILABILITY => ApiResponse::ok(ChangeAvailabilityRequest::handle_mq(state, req).await?),
+        ACTION_CHANGE_CONFIGURATION => ApiResponse::ok(ChangeConfigurationRequest::handle_mq(state, req).await?),
+        ACTION_CLEAR_CACHE => ApiResponse::ok(
+            ClearCacheRequest::handle_mq(state, req)
+                .map_err(|e| AppError::BadRequest(e.to_string()))
+                .await?,
+        ),
+        ACTION_CLEAR_CHARGING_PROFILE => ApiResponse::ok(ClearChargingProfileRequest::handle_mq(state, req).await?),
+        ACTION_DATA_TRANSFER => ApiResponse::ok(DataTransferRequest::handle_mq(state, req).await?),
+        ACTION_GET_COMPOSITE_SCHEDULE => ApiResponse::ok(GetCompositeScheduleRequest::handle_mq(state, req).await?),
+        ACTION_GET_CONFIGURATION => ApiResponse::ok(GetConfigurationRequest::handle_mq(state, req).await?),
+        ACTION_GET_DIAGNOSTICS => ApiResponse::ok(GetDiagnosticsRequest::handle_mq(state, req).await?),
+        ACTION_GET_LOCAL_LIST_VERSION => ApiResponse::ok(GetLocalListVersionRequest::handle_mq(state, req).await?),
+        ACTION_REMOTE_STOP_TRANSACTION => ApiResponse::ok(RemoteStopTransactionRequest::handle_mq(state, req).await?),
+        ACTION_REMOTE_START_TRANSACTION => ApiResponse::ok(RemoteStartTransactionRequest::handle_mq(state, req).await?),
+        ACTION_RESERVE_NOW => ApiResponse::ok(ReserveNowRequest::handle_mq(state, req).await?),
+        ACTION_SEND_LOCAL_LIST => ApiResponse::ok(SendLocalListRequest::handle_mq(state, req).await?),
+        ACTION_SET_CHARGING_PROFILE => ApiResponse::ok(SetChargingProfileRequest::handle_mq(state, req).await?),
+        ACTION_TRIGGER_MESSAGE => ApiResponse::ok(TriggerMessageRequest::handle_mq(state, req).await?),
+        ACTION_UNLOCK_CONNECTOR => ApiResponse::ok(UnlockConnectorRequest::handle_mq(state, req).await?),
+        ACTION_UPDATE_FIRMWARE => ApiResponse::ok(UpdateFirmwareRequest::handle_mq(state, req).await?),
+        _ => ApiResponse::ok(UnknownRequest::handle_mq(state, req).await?),
+    })
 }

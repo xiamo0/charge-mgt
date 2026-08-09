@@ -13,7 +13,7 @@ use ocpp_1_6::confs::GetDiagnosticsConfirmation;
 
 impl Handler<GetDiagnosticsConfirmation> for GetDiagnosticsRequest {
     #[cfg(feature = "message_by_http")]
-    async fn handle_detail(
+    async fn handle_detail_http(
         state: &AppState,
         msg: &CloudMessage,
     ) -> Result<GetDiagnosticsConfirmation, AppError> {
@@ -21,7 +21,7 @@ impl Handler<GetDiagnosticsConfirmation> for GetDiagnosticsRequest {
     }
 
     #[cfg(feature = "message_by_mq")]
-    async fn handle_detail(
+    async fn handle_detail_mq(
         state: &AppState,
         msg: &CloudMessage,
     ) -> Result<GetDiagnosticsConfirmation, AppError> {
