@@ -53,9 +53,7 @@ impl MqDispatcher {
             .set("auto.offset.reset", "latest")
             .set("session.timeout.ms", "10000")
             .create()
-            .map_err(|e| {
-                AppError::Internal(format!("创建 Kafka resp 消费者失败：{e}"))
-            })?;
+            .map_err(|e| AppError::Internal(format!("创建 Kafka resp 消费者失败：{e}")))?;
 
         let topics = if !start_topics.is_empty() {
             start_topics
@@ -120,9 +118,7 @@ impl MqDispatcher {
                 self.pending.remove(unique_id);
                 Err(AppError::OCPP_1_6_ERROR {
                     action: "MQ_RESP_TIMEOUT".into(),
-                    detail: format!(
-                        "等待 OCPP 响应超时（{timeout:?}）：unique_id={unique_id}"
-                    ),
+                    detail: format!("等待 OCPP 响应超时（{timeout:?}）：unique_id={unique_id}"),
                 })
             }
         }
@@ -177,9 +173,7 @@ impl MqDispatcher {
             }
 
             // 定期重发现新增 resp topic（与 consumer.rs 同样的策略）
-            if let Ok(metadata) =
-                consumer.fetch_metadata(None, Duration::from_secs(5))
-            {
+            if let Ok(metadata) = consumer.fetch_metadata(None, Duration::from_secs(5)) {
                 let discovered: Vec<String> = metadata
                     .topics()
                     .iter()

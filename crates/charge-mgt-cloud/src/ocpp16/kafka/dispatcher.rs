@@ -1,3 +1,4 @@
+use crate::error::AppError;
 use crate::ocpp16::entity::sent_messages;
 use crate::ocpp16::envelope::CloudMessage;
 use crate::ocpp16::message_from_cp_handler::{Handler, UnknownRequest};
@@ -14,7 +15,6 @@ use ocpp_1_6::protocol::{
 };
 use sea_orm::{EntityTrait, Set, TryInsertResult};
 use tracing::{info, log, warn};
-use crate::error::AppError;
 
 pub struct MessageDispatcher {
     state: AppState,
@@ -27,9 +27,9 @@ impl MessageDispatcher {
 
     pub async fn dispatch(&self, bytes: &[u8]) -> Result<(), AppError> {
         let msg: CloudMessage =
-            serde_json::from_slice(bytes).map_err(|e| AppError::OCPP_1_6_ERROR{
-                action:"mq".to_string(),
-                detail:e.to_string()
+            serde_json::from_slice(bytes).map_err(|e| AppError::OCPP_1_6_ERROR {
+                action: "mq".to_string(),
+                detail: e.to_string(),
             })?;
 
         let new_message = sent_messages::ActiveModel {
@@ -50,7 +50,7 @@ impl MessageDispatcher {
                 .await
                 .map_err(|e| AppError::OCPP_1_6_ERROR {
                     action: "mq".to_string(),
-                    detail: e.to_string()
+                    detail: e.to_string(),
                 })?;
 
             match res {
@@ -78,25 +78,22 @@ impl MessageDispatcher {
 
         let response = match handler_result {
             Ok(payload) => msg.new_call_result(payload),
-            Err(e) => {
-               msg.new_call_error("InternalError", &format!("处理消息失败: {}", e))
-            }
+            Err(e) => msg.new_call_error(),
         };
 
-        let resp_bytes =
-            serde_json::to_vec(&response).map_err(|e| AppError::OCPP_1_6_ERROR {
-                action: "mq".to_string(),
-                detail: e.to_string()
-            })?;
+        let resp_bytes = serde_json::to_vec(&response).map_err(|e| AppError::OCPP_1_6_ERROR {
+            action: "mq".to_string(),
+            detail: e.to_string(),
+        })?;
 
-        let topic = self.resp_topic(&msg.gateway_id);
+        let topic = &msg.csms_response_cp_message_mq_topic;
 
         if let Ok(pr) = self.state.producer() {
             pr.send_resp(&topic, &msg.unique_id, &resp_bytes)
                 .await
                 .map_err(|e| AppError::OCPP_1_6_ERROR {
                     action: "mq".to_string(),
-                    detail: e.to_string()
+                    detail: e.to_string(),
                 })?;
         } else {
             log::error!("Kafka producer 未初始化，无法发送响应消息");
@@ -128,14 +125,6 @@ impl MessageDispatcher {
             ACTION_DATA_TRANSFER => DataTransferRequest::handle(state, msg).await,
 
             _other => UnknownRequest::handle(state, msg).await,
-        }
-    }
-
-    fn resp_topic(&self, gateway_id: &str) -> String {
-        if let Some(config) = &self.state.config {
-            format!("{}.resp.{}", config.kafka.topic_prefix, gateway_id)
-        } else {
-            format!("{}.resp.{}", "unknown_topic_prefix", gateway_id)
         }
     }
 }

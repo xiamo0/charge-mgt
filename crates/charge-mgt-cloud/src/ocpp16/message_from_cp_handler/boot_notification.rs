@@ -12,8 +12,8 @@ use tracing::log;
 
 impl Handler<BootNotificationConfirmation> for BootNotificationRequest {
     async fn handel_detail(
-        state: &crate::state::AppState,
-        msg: &crate::ocpp16::envelope::CloudMessage,
+        state: &AppState,
+        msg: &CloudMessage,
     ) -> Result<BootNotificationConfirmation, AppError> {
         let req: BootNotificationRequest = serde_json::from_value(msg.payload.clone())?;
 
@@ -69,59 +69,4 @@ impl Handler<BootNotificationConfirmation> for BootNotificationRequest {
 
         Ok(confirmation)
     }
-}
-
-pub async fn handle(state: &AppState, msg: &CloudMessage) -> Result<serde_json::Value, AppError> {
-    let req: BootNotificationRequest = serde_json::from_value(msg.payload.clone())?;
-
-    if req.charge_point_vendor.len() > 20 {
-        return Err(AppError::OCPP_1_6_ERROR {
-            action: ACTION_BOOT_NOTIFICATION_CONFIRMATION.to_string(),
-            detail: "chargePointVendor must be <= 20 characters".to_string(),
-        });
-    }
-    if req.charge_point_model.len() > 20 {
-        return Err(AppError::OCPP_1_6_ERROR {
-            action: ACTION_BOOT_NOTIFICATION_CONFIRMATION.to_string(),
-            detail: "chargePointModel must be <= 20 characters".to_string(),
-        });
-    }
-
-    let charge_point_serial_number =
-        req.charge_point_serial_number
-            .ok_or_else(|| AppError::OCPP_1_6_ERROR {
-                action: ACTION_BOOT_NOTIFICATION_CONFIRMATION.to_string(),
-                detail: "charge_point_serial_number must not null".to_string(),
-            })?;
-    let charge_box_serial_number =
-        req.charge_box_serial_number
-            .ok_or_else(|| AppError::OCPP_1_6_ERROR {
-                action: ACTION_BOOT_NOTIFICATION_CONFIRMATION.to_string(),
-                detail: "charge_box_serial_number must not null".to_string(),
-            })?;
-
-    if let Ok(db) = state.db() {
-        ChargePoints::find()
-            .filter(
-                ChargePointColumn::ChargeBoxSerialNumber
-                    .eq(charge_box_serial_number.clone())
-                    .and(
-                        ChargePointColumn::ChargePointSerialNumber
-                            .eq(charge_point_serial_number.clone()),
-                    ),
-            )
-            .filter(ChargePointColumn::IsDeleted.eq(0_i16))
-            .one(db)
-            .await?
-            .ok_or_else(|| AppError::OCPP_1_6_ERROR {
-                action: ACTION_BOOT_NOTIFICATION_CONFIRMATION.to_string(),
-                detail: "charge_point_serial_number must not null".to_string(),
-            })?;
-    } else {
-        log::error!("db not exists");
-    }
-
-    let confirmation = BootNotificationConfirmation::accepted(&Utc::now().to_rfc3339(), 30);
-
-    Ok(serde_json::to_value(&confirmation)?)
 }

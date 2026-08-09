@@ -24,10 +24,7 @@ pub mod unlock_connector;
 pub mod update_firmware;
 
 pub trait Handler<T: Serialize> {
-    async fn handle(
-        state: &AppState,
-        msg: &CloudMessage,
-    ) -> Result<serde_json::Value, AppError> {
+    async fn handle(state: &AppState, msg: &CloudMessage) -> Result<serde_json::Value, AppError> {
         let r = Self::handle_detail(state, msg).await?;
 
         Ok(serde_json::to_value(&r)?)

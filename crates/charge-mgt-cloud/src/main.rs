@@ -41,10 +41,11 @@ async fn main() -> anyhow::Result<()> {
 
     db::run_migrations(&db).await?;
     info!("已应用数据库迁移");
-    
-    let http_sender = HttpSender::new().map_err(|e| anyhow::anyhow!("初始化 HttpSender 失败: {}", e))?;
 
-    let mut state = AppState::new(config.clone(), db.clone(),http_sender);
+    let http_sender =
+        HttpSender::new().map_err(|e| anyhow::anyhow!("初始化 HttpSender 失败: {}", e))?;
+
+    let mut state = AppState::new(config.clone(), db.clone(), http_sender);
     #[cfg(all(feature = "message_by_mq", feature = "ocpp_1_6"))]
     {
         use charge_mgt_cloud::ocpp16::kafka::consumer::spawn_kafka_consumer;
@@ -59,7 +60,9 @@ async fn main() -> anyhow::Result<()> {
             &config.kafka.topic_prefix,
             Vec::new(),
         )?;
-        state = state.with_producer(producer).with_mq_dispatcher(mq_dispatcher);
+        state = state
+            .with_producer(producer)
+            .with_mq_dispatcher(mq_dispatcher);
         spawn_kafka_consumer(state.clone()).await?;
     }
 

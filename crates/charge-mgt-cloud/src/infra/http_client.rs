@@ -1,8 +1,8 @@
 // infra/http/mod.rs
-use std::time::Duration;
+use crate::error::AppError;
 use anyhow::Result;
 use reqwest::Client;
-use crate::error::AppError;
+use std::time::Duration;
 
 #[derive(Clone)]
 pub struct HttpSender {
@@ -25,16 +25,27 @@ impl HttpSender {
         gateway_http_url: &str,
         payload: &serde_json::Value,
     ) -> Result<serde_json::Value, AppError> {
-        let resp = self.client
+        let resp = self
+            .client
             .post(gateway_http_url)
             .header("Content-Type", "application/json")
             .json(payload)
             .send()
-            .await.map_err(|e| AppError::OCPP_1_6_ERROR { action: "OCPP HTTP 发送失败".to_string(), detail: e.to_string() })?;
+            .await
+            .map_err(|e| AppError::OCPP_1_6_ERROR {
+                action: "OCPP HTTP 发送失败".to_string(),
+                detail: e.to_string(),
+            })?;
         let status = resp.status();
-        let body = resp.json().await.map_err(|e| AppError::OCPP_1_6_ERROR { action: "OCPP HTTP 发送失败".to_string(), detail: e.to_string() })?;
+        let body = resp.json().await.map_err(|e| AppError::OCPP_1_6_ERROR {
+            action: "OCPP HTTP 发送失败".to_string(),
+            detail: e.to_string(),
+        })?;
         if !status.is_success() {
-            return Err(AppError::OCPP_1_6_ERROR { action: "OCPP HTTP 发送失败".to_string(), detail: format!("OCPP HTTP 发送失败 {}: {:?}", status, body) });
+            return Err(AppError::OCPP_1_6_ERROR {
+                action: "OCPP HTTP 发送失败".to_string(),
+                detail: format!("OCPP HTTP 发送失败 {}: {:?}", status, body),
+            });
         }
         Ok(body)
     }

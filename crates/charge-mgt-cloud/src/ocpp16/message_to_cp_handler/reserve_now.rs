@@ -1,5 +1,5 @@
-use ocpp_1_6::{ACTION_RESERVE_NOW_CONFIRMATION, CALL, CALLERROR, CALLRESULT};
 use crate::ocpp16::envelope::CloudMessage;
+use ocpp_1_6::{ACTION_RESERVE_NOW_CONFIRMATION, CALL, CALLERROR, CALLRESULT};
 
 use crate::error::AppError;
 use crate::ocpp16::message_to_cp_handler::Handler;
@@ -21,7 +21,7 @@ impl Handler<ReserveNowConfirmation> for ReserveNowRequest {
         let ocpp_call = serde_json::json!([CALL, &msg.unique_id, &msg.action, &msg.payload,]);
 
         let resp_value = http_sender
-            .post_ocpp(&msg.http_url, &ocpp_call)
+            .post_ocpp(&msg.csms_request_cp_message_http_url, &ocpp_call)
             .await
             .map_err(|e| AppError::OCPP_1_6_ERROR {
                 action: ACTION_RESERVE_NOW_CONFIRMATION.into(),
@@ -82,7 +82,6 @@ impl Handler<ReserveNowConfirmation> for ReserveNowRequest {
                 });
             }
         }
-        
     }
 
     #[cfg(feature = "message_by_mq")]

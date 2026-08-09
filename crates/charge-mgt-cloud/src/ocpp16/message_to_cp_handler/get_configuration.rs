@@ -1,5 +1,5 @@
-use ocpp_1_6::{ ACTION_GET_CONFIGURATION_CONFIRMATION, CALL, CALLERROR, CALLRESULT};
 use crate::ocpp16::envelope::CloudMessage;
+use ocpp_1_6::{ACTION_GET_CONFIGURATION_CONFIRMATION, CALL, CALLERROR, CALLRESULT};
 
 use crate::error::AppError;
 use crate::ocpp16::message_to_cp_handler::Handler;
@@ -13,7 +13,6 @@ impl Handler<GetConfigurationConfirmation> for GetConfigurationRequest {
         state: &AppState,
         msg: &CloudMessage,
     ) -> Result<GetConfigurationConfirmation, AppError> {
-
         let http_sender = state.http_sender().map_err(|e| AppError::OCPP_1_6_ERROR {
             action: ACTION_GET_CONFIGURATION_CONFIRMATION.into(),
             detail: format!("请求ID {} ,获取 HTTP sender 失败: {e}", msg.unique_id),
@@ -22,7 +21,7 @@ impl Handler<GetConfigurationConfirmation> for GetConfigurationRequest {
         let ocpp_call = serde_json::json!([CALL, &msg.unique_id, &msg.action, &msg.payload,]);
 
         let resp_value = http_sender
-            .post_ocpp(&msg.http_url, &ocpp_call)
+            .post_ocpp(&msg.csms_request_cp_message_http_url, &ocpp_call)
             .await
             .map_err(|e| AppError::OCPP_1_6_ERROR {
                 action: ACTION_GET_CONFIGURATION_CONFIRMATION.into(),

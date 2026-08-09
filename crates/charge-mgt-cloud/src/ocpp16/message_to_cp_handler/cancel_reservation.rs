@@ -25,7 +25,7 @@ impl Handler<CancelReservationConfirmation> for CancelReservationRequest {
         let ocpp_call = serde_json::json!([CALL, &msg.unique_id, &msg.action, &msg.payload,]);
 
         let resp_value = http_sender
-            .post_ocpp(&msg.http_url, &ocpp_call)
+            .post_ocpp(&msg.csms_request_cp_message_http_url, &ocpp_call)
             .await
             .map_err(|e| AppError::OCPP_1_6_ERROR {
                 action: ACTION_CANCEL_RESERVATION_CONFIRMATION.into(),
