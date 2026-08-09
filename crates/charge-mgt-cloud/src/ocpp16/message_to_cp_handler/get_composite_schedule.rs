@@ -3,6 +3,8 @@ use ocpp_1_6::{ACTION_GET_COMPOSITE_SCHEDULE_CONFIRMATION, CALL, CALLERROR, CALL
 
 use crate::error::AppError;
 use crate::ocpp16::message_to_cp_handler::Handler;
+#[cfg(feature = "message_by_mq")]
+use crate::ocpp16::message_to_cp_handler::dispatch_mq_call;
 use crate::state::AppState;
 use ocpp_1_6::calls::GetCompositeScheduleRequest;
 use ocpp_1_6::confs::GetCompositeScheduleConfirmation;
@@ -86,9 +88,9 @@ impl Handler<GetCompositeScheduleConfirmation> for GetCompositeScheduleRequest {
 
     #[cfg(feature = "message_by_mq")]
     async fn handle_detail(
-        _state: &AppState,
-        _msg: &CloudMessage,
+        state: &AppState,
+        msg: &CloudMessage,
     ) -> Result<GetCompositeScheduleConfirmation, AppError> {
-        todo!()
+        dispatch_mq_call(state, msg, ACTION_GET_COMPOSITE_SCHEDULE_CONFIRMATION).await
     }
 }

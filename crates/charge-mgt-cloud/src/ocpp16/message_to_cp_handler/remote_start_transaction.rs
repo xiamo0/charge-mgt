@@ -3,6 +3,8 @@ use ocpp_1_6::{ACTION_REMOTE_START_TRANSACTION_CONFIRMATION, CALL, CALLERROR, CA
 
 use crate::error::AppError;
 use crate::ocpp16::message_to_cp_handler::Handler;
+#[cfg(feature = "message_by_mq")]
+use crate::ocpp16::message_to_cp_handler::dispatch_mq_call;
 use crate::state::AppState;
 use ocpp_1_6::calls::RemoteStartTransactionRequest;
 use ocpp_1_6::confs::RemoteStartTransactionConfirmation;
@@ -86,9 +88,9 @@ impl Handler<RemoteStartTransactionConfirmation> for RemoteStartTransactionReque
 
     #[cfg(feature = "message_by_mq")]
     async fn handle_detail(
-        _state: &AppState,
-        _msg: &CloudMessage,
+        state: &AppState,
+        msg: &CloudMessage,
     ) -> Result<RemoteStartTransactionConfirmation, AppError> {
-        todo!()
+        dispatch_mq_call(state, msg, ACTION_REMOTE_START_TRANSACTION_CONFIRMATION).await
     }
 }

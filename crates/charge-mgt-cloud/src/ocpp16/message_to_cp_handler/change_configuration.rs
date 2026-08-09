@@ -3,6 +3,8 @@ use ocpp_1_6::{ACTION_CHANGE_CONFIGURATION_CONFIRMATION, CALL, CALLERROR, CALLRE
 
 use crate::error::AppError;
 use crate::ocpp16::message_to_cp_handler::Handler;
+#[cfg(feature = "message_by_mq")]
+use crate::ocpp16::message_to_cp_handler::dispatch_mq_call;
 use crate::state::AppState;
 use ocpp_1_6::calls::ChangeConfigurationRequest;
 use ocpp_1_6::confs::ChangeConfigurationConfirmation;
@@ -86,9 +88,9 @@ impl Handler<ChangeConfigurationConfirmation> for ChangeConfigurationRequest {
 
     #[cfg(feature = "message_by_mq")]
     async fn handle_detail(
-        _state: &AppState,
-        _msg: &CloudMessage,
+        state: &AppState,
+        msg: &CloudMessage,
     ) -> Result<ChangeConfigurationConfirmation, AppError> {
-        todo!()
+        dispatch_mq_call(state, msg, ACTION_CHANGE_CONFIGURATION_CONFIRMATION).await
     }
 }

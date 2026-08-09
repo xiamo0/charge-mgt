@@ -3,6 +3,8 @@ use ocpp_1_6::{ACTION_UNLOCK_CONNECTOR_CONFIRMATION, CALL, CALLERROR, CALLRESULT
 
 use crate::error::AppError;
 use crate::ocpp16::message_to_cp_handler::Handler;
+#[cfg(feature = "message_by_mq")]
+use crate::ocpp16::message_to_cp_handler::dispatch_mq_call;
 use crate::state::AppState;
 use ocpp_1_6::calls::UnlockConnectorRequest;
 use ocpp_1_6::confs::UnlockConnectorConfirmation;
@@ -86,9 +88,9 @@ impl Handler<UnlockConnectorConfirmation> for UnlockConnectorRequest {
 
     #[cfg(feature = "message_by_mq")]
     async fn handle_detail(
-        _state: &AppState,
-        _msg: &CloudMessage,
+        state: &AppState,
+        msg: &CloudMessage,
     ) -> Result<UnlockConnectorConfirmation, AppError> {
-        todo!()
+        dispatch_mq_call(state, msg, ACTION_UNLOCK_CONNECTOR_CONFIRMATION).await
     }
 }

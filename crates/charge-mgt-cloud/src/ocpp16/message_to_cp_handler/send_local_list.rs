@@ -3,6 +3,8 @@ use ocpp_1_6::{ACTION_SEND_LOCAL_LIST_CONFIRMATION, CALL, CALLERROR, CALLRESULT}
 
 use crate::error::AppError;
 use crate::ocpp16::message_to_cp_handler::Handler;
+#[cfg(feature = "message_by_mq")]
+use crate::ocpp16::message_to_cp_handler::dispatch_mq_call;
 use crate::state::AppState;
 use ocpp_1_6::calls::SendLocalListRequest;
 use ocpp_1_6::confs::SendLocalListConfirmation;
@@ -86,9 +88,9 @@ impl Handler<SendLocalListConfirmation> for SendLocalListRequest {
 
     #[cfg(feature = "message_by_mq")]
     async fn handle_detail(
-        _state: &AppState,
-        _msg: &CloudMessage,
+        state: &AppState,
+        msg: &CloudMessage,
     ) -> Result<SendLocalListConfirmation, AppError> {
-        todo!()
+        dispatch_mq_call(state, msg, ACTION_SEND_LOCAL_LIST_CONFIRMATION).await
     }
 }

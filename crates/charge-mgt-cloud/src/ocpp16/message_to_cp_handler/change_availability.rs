@@ -1,6 +1,8 @@
 use crate::error::AppError;
 use crate::ocpp16::envelope::CloudMessage;
 use crate::ocpp16::message_to_cp_handler::Handler;
+#[cfg(feature = "message_by_mq")]
+use crate::ocpp16::message_to_cp_handler::dispatch_mq_call;
 use crate::state::AppState;
 use ocpp_1_6::calls::ChangeAvailabilityRequest;
 use ocpp_1_6::confs::ChangeAvailabilityConfirmation;
@@ -85,11 +87,10 @@ impl Handler<ChangeAvailabilityConfirmation> for ChangeAvailabilityRequest {
         }
     }
     #[cfg(feature = "message_by_mq")]
-
     async fn handle_detail(
-        _state: &AppState,
-        _msg: &CloudMessage,
+        state: &AppState,
+        msg: &CloudMessage,
     ) -> Result<ChangeAvailabilityConfirmation, AppError> {
-        todo!()
+        dispatch_mq_call(state, msg, ACTION_CHANGE_AVAILABILITY_CONFIRMATION).await
     }
 }

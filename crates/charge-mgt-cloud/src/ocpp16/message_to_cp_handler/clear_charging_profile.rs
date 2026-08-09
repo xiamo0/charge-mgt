@@ -3,6 +3,8 @@ use ocpp_1_6::{ACTION_CLEAR_CHARGING_PROFILE_CONFIRMATION, CALL, CALLERROR, CALL
 
 use crate::error::AppError;
 use crate::ocpp16::message_to_cp_handler::Handler;
+#[cfg(feature = "message_by_mq")]
+use crate::ocpp16::message_to_cp_handler::dispatch_mq_call;
 use crate::state::AppState;
 use ocpp_1_6::calls::ClearChargingProfileRequest;
 use ocpp_1_6::confs::ClearChargingProfileConfirmation;
@@ -86,9 +88,9 @@ impl Handler<ClearChargingProfileConfirmation> for ClearChargingProfileRequest {
 
     #[cfg(feature = "message_by_mq")]
     async fn handle_detail(
-        _state: &AppState,
-        _msg: &CloudMessage,
+        state: &AppState,
+        msg: &CloudMessage,
     ) -> Result<ClearChargingProfileConfirmation, AppError> {
-        todo!()
+        dispatch_mq_call(state, msg, ACTION_CLEAR_CHARGING_PROFILE_CONFIRMATION).await
     }
 }

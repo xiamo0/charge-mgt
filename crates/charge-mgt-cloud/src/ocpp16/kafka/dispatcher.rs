@@ -34,7 +34,7 @@ impl MessageDispatcher {
 
         let new_message = sent_messages::ActiveModel {
             unique_id: Set(msg.unique_id.clone()),
-            gateway_id: Set(msg.gateway_id.clone()),
+            gateway_id: Set(String::new()),
             charge_point_id: Set(msg.charge_point_id.clone()),
             direction: Set(msg.message_type.clone()),
             action: Set(msg.action.clone()),

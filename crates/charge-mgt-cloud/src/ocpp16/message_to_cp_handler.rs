@@ -1,7 +1,11 @@
+use std::time::Duration;
+
+use ocpp_1_6::{CALL, CALLERROR, CALLRESULT};
+use serde::{Deserialize, Serialize};
+
 use crate::error::AppError;
 use crate::ocpp16::envelope::CloudMessage;
 use crate::state::AppState;
-use serde::Serialize;
 
 // 云平台向充电桩发送请求
 pub mod cancel_reservation;
@@ -23,6 +27,9 @@ pub mod trigger_message;
 pub mod unlock_connector;
 pub mod update_firmware;
 
+/// MQ 出站模式默认等待桩响应超时。
+pub const MQ_RESP_TIMEOUT: Duration = Duration::from_secs(10);
+
 pub trait Handler<T: Serialize> {
     async fn handle(state: &AppState, msg: &CloudMessage) -> Result<serde_json::Value, AppError> {
         let r = Self::handle_detail(state, msg).await?;
@@ -32,6 +39,74 @@ pub trait Handler<T: Serialize> {
 
     async fn handle_detail(state: &AppState, msg: &CloudMessage) -> Result<T, AppError>;
 }
+
+/// MQ 出站通用流程：组装 CALL → 发到 req topic → 等 resp topic 回 CALLRESULT → 反序列化为 `T`。
+///
+/// 协议细节：
+/// - 出站包络：`[2, unique_id, action, payload]`
+/// - 入站包络：`[3, unique_id, payload]`（成功）或 `[4, unique_id, code, desc, detail]`（失败）
+///
+/// `action_label` 仅用于错误信息中的可读字段，不参与协议。
+#[cfg(all(feature = "ocpp_1_6", feature = "message_by_mq"))]
+pub async fn dispatch_mq_call<T>(
+    state: &AppState,
+    msg: &CloudMessage,
+    action_label: &str,
+) -> Result<T, AppError>
+where
+    T: for<'de> Deserialize<'de>,
+{
+    let producer = state.producer()?;
+    let mq = state.mq_dispatcher()?;
+
+    let unique_id = msg.unique_id.clone();
+    let ocpp_call = serde_json::json!([CALL, unique_id.as_str(), msg.action, msg.payload]);
+    let call_bytes = serde_json::to_vec(&ocpp_call).map_err(|e| AppError::OCPP_1_6_ERROR {
+        action: action_label.to_string(),
+        detail: format!("序列化 CALL 失败：{e}"),
+    })?;
+
+    producer
+        .send_call(&msg.csms_request_cp_message_mq_topic, &unique_id, &call_bytes)
+        .await
+        .map_err(|e| AppError::OCPP_1_6_ERROR {
+            action: action_label.to_string(),
+            detail: format!("发送 CALL 失败：{e}"),
+        })?;
+
+    let resp = mq.await_response(&unique_id, MQ_RESP_TIMEOUT).await?;
+    let arr: Vec<serde_json::Value> =
+        serde_json::from_slice(&resp.bytes).map_err(|e| AppError::OCPP_1_6_ERROR {
+            action: action_label.to_string(),
+            detail: format!("MQ 响应 JSON 解析失败：{e}"),
+        })?;
+
+    match arr.first().and_then(|v| v.as_i64()) {
+        Some(t) if t == CALLRESULT => {
+            let payload = arr.get(2).cloned().ok_or_else(|| AppError::OCPP_1_6_ERROR {
+                action: action_label.to_string(),
+                detail: "CALLRESULT 缺少 payload".into(),
+            })?;
+            serde_json::from_value(payload).map_err(|e| AppError::OCPP_1_6_ERROR {
+                action: action_label.to_string(),
+                detail: format!("反序列化 Confirmation 失败：{e}"),
+            })
+        }
+        Some(t) if t == CALLERROR => {
+            let code = arr.get(2).and_then(|v| v.as_str()).unwrap_or("Unknown");
+            let desc = arr.get(3).and_then(|v| v.as_str()).unwrap_or("");
+            Err(AppError::OCPP_1_6_ERROR {
+                action: action_label.to_string(),
+                detail: format!("桩返回 CALLERROR [{code}]: {desc}"),
+            })
+        }
+        other => Err(AppError::OCPP_1_6_ERROR {
+            action: action_label.to_string(),
+            detail: format!("未知 MQ 响应类型：{other:?}"),
+        }),
+    }
+}
+
 pub struct UnknownRequest;
 impl Handler<String> for UnknownRequest {
     #[cfg(feature = "message_by_http")]
