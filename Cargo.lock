@@ -559,6 +559,11 @@ dependencies = [
 [[package]]
 name = "charge-mgt-common"
 version = "0.1.0"
+dependencies = [
+ "chrono",
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "charge_mgt_cloud"
@@ -566,6 +571,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
+ "charge-mgt-common",
  "chrono",
  "config",
  "dashmap",
@@ -589,6 +595,7 @@ dependencies = [
 name = "charge_mgt_gateway"
 version = "0.1.0"
 dependencies = [
+ "charge-mgt-common",
  "chrono",
  "config",
  "futures-util",

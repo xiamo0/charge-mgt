@@ -4,5 +4,10 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
+description = "跨 crate 共享的工具与协议"
 
 [dependencies]
+serde = { workspace = true }
+serde_json.workspace = true
+chrono = { workspace = true }
+

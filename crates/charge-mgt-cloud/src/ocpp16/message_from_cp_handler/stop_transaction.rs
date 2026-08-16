@@ -5,9 +5,9 @@ use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 use crate::error::AppError;
 use crate::ocpp16::entity::charge_transaction::{Column, Entity as Transactions, Model};
 use crate::ocpp16::entity::enums::TransactionStatus;
-use crate::ocpp16::envelope::CloudMessage;
 use crate::ocpp16::message_from_cp_handler::Handler;
 use crate::state::AppState;
+use charge_mgt_common::ocpp16::CloudMessage;
 use ocpp_1_6::ACTION_STOP_TRANSACTION_CONFIRMATION;
 use ocpp_1_6::calls::StopTransactionRequest;
 use ocpp_1_6::confs::StopTransactionConfirmation;
@@ -17,7 +17,8 @@ impl Handler<StopTransactionConfirmation> for StopTransactionRequest {
         state: &AppState,
         msg: &CloudMessage,
     ) -> Result<StopTransactionConfirmation, AppError> {
-        let req: StopTransactionRequest = serde_json::from_value(msg.payload.clone())?;
+        let req: StopTransactionRequest =
+            serde_json::from_value(msg.payload.clone().unwrap_or(serde_json::Value::Null))?;
 
         let db = state.db()?;
         let tx_id_str = req.transaction_id.to_string();
@@ -30,7 +31,7 @@ impl Handler<StopTransactionConfirmation> for StopTransactionRequest {
                 action: ACTION_STOP_TRANSACTION_CONFIRMATION.into(),
                 detail: format!(
                     "请求ID {}, transaction_id {tx_id_str} 不存在",
-                    msg.unique_id
+                    msg.unique_id.as_deref().unwrap_or("")
                 ),
             })?;
 

@@ -31,6 +31,7 @@ rust_decimal.workspace = true
 
 # OCPP 消息结构（复用）
 ocpp_1_6 = { path = "../ocpp-1-6" }
+charge-mgt-common = { path = "../charge-mgt-common" }
 
 # 数据库（PG + sea-orm）
 sea-orm.workspace = true

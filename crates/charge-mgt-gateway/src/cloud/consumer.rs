@@ -11,7 +11,7 @@ use std::sync::Arc;
 use tokio::sync::{RwLock, mpsc};
 use tracing::{error, info, warn};
 
-use crate::cloud::message::CloudMessage;
+use charge_mgt_common::ocpp16::CloudMessage;
 use crate::config::KafkaConfig;
 use crate::error::{GatewayError, Result};
 use crate::response_channel::{MessageDirection, PendingRequestTracker};
@@ -136,8 +136,7 @@ impl KafkaConsumer {
             .create()
             .map_err(|e| GatewayError::Kafka(format!("创建消费者失败: {}", e)))?;
 
-        let cmd_topic =
-            CloudMessage::cmd_topic(&config.topic_prefix, &config.cmd_topic_suffix, gateway_id);
+        let cmd_topic = CloudMessage::cmd_topic(&config.topic_prefix, gateway_id);
         consumer
             .subscribe(&[&cmd_topic])
             .map_err(|e| GatewayError::Kafka(format!("订阅主题失败: {}", e)))?;
@@ -171,8 +170,7 @@ impl KafkaConsumer {
             .create()
             .map_err(|e| GatewayError::Kafka(format!("创建消费者失败: {}", e)))?;
 
-        let resp_topic =
-            CloudMessage::resp_topic(&config.topic_prefix, &config.resp_topic_suffix, gateway_id);
+        let resp_topic = CloudMessage::resp_topic(&config.topic_prefix, gateway_id);
         consumer
             .subscribe(&[&resp_topic])
             .map_err(|e| GatewayError::Kafka(format!("订阅主题失败: {}", e)))?;
@@ -219,18 +217,18 @@ impl KafkaConsumer {
 
     // 根据 message_type 分发到对应的 OCPP 消息构建逻辑
     async fn handle_downstream_message(&self, msg: CloudMessage) {
-        let charge_point_id = &msg.charge_point_id;
+        let charge_point_id = &msg.charge_point_id.as_deref().unwrap_or("");
 
         info!(
             "收到下行消息: 类型={}, 动作={}, 充电桩={}",
-            msg.message_type, msg.action, charge_point_id
+            msg.message_type.as_deref().unwrap_or(""), msg.action.as_deref().unwrap_or(""), charge_point_id
         );
 
-        match msg.message_type.as_str() {
-            "CallResult" => self.handle_call_result(&msg, charge_point_id).await,
-            "CallError" => self.handle_call_error(&msg, charge_point_id).await,
-            "Call" => self.handle_call(&msg, charge_point_id).await,
-            _ => warn!("未知消息类型: {}", msg.message_type),
+        match msg.message_type.as_deref() {
+            Some("CallResult") => self.handle_call_result(&msg, charge_point_id).await,
+            Some("CallError") => self.handle_call_error(&msg, charge_point_id).await,
+            Some("Call") => self.handle_call(&msg, charge_point_id).await,
+            _ => warn!("未知消息类型: {}", msg.message_type.as_deref().unwrap_or("")),
         }
     }
 
@@ -245,32 +243,32 @@ impl KafkaConsumer {
                 self.connection_manager
                     .send_to_charge_point(
                         charge_point_id,
-                        build_ocpp_call_result(&msg.unique_id, msg.payload.clone()),
+                        build_ocpp_call_result(&msg.unique_id.as_deref().unwrap_or(""), msg.payload.clone().unwrap_or(serde_json::Value::Null)),
                     )
                     .await;
                 return;
             }
         };
 
-        let pending = tracker.remove(&msg.unique_id).await;
+        let pending = tracker.remove(&msg.unique_id.as_deref().unwrap_or("")).await;
         match pending {
             Some(request) => {
                 info!(
                     "云端 CallResult 已匹配待响应请求: uniqueId={}, 动作={}",
                     request.unique_id, request.action
                 );
-                let call_result_json = build_ocpp_call_result(&msg.unique_id, msg.payload.clone());
+                let call_result_json = build_ocpp_call_result(&msg.unique_id.as_deref().unwrap_or(""), msg.payload.clone().unwrap_or(serde_json::Value::Null));
                 request.response_tx.send(call_result_json).ok();
             }
             None => {
                 warn!(
                     "CallResult 无匹配待响应请求 uniqueId={}，直接转发至充电桩",
-                    msg.unique_id
+                    msg.unique_id.as_deref().unwrap_or("")
                 );
                 self.connection_manager
                     .send_to_charge_point(
                         charge_point_id,
-                        build_ocpp_call_result(&msg.unique_id, msg.payload.clone()),
+                        build_ocpp_call_result(&msg.unique_id.as_deref().unwrap_or(""), msg.payload.clone().unwrap_or(serde_json::Value::Null)),
                     )
                     .await;
             }
@@ -282,7 +280,7 @@ impl KafkaConsumer {
             Some(t) => t,
             None => {
                 let error_json = build_ocpp_call_error(
-                    &msg.unique_id,
+                    &msg.unique_id.as_deref().unwrap_or(""),
                     msg.error_code.as_deref().unwrap_or("InternalError"),
                     msg.error_description.as_deref().unwrap_or("Unknown error"),
                 );
@@ -293,7 +291,7 @@ impl KafkaConsumer {
             }
         };
 
-        let pending = tracker.remove(&msg.unique_id).await;
+        let pending = tracker.remove(&msg.unique_id.as_deref().unwrap_or("")).await;
         match pending {
             Some(request) => {
                 info!(
@@ -301,7 +299,7 @@ impl KafkaConsumer {
                     request.unique_id, request.action
                 );
                 let error_json = build_ocpp_call_error(
-                    &msg.unique_id,
+                    &msg.unique_id.as_deref().unwrap_or(""),
                     msg.error_code.as_deref().unwrap_or("InternalError"),
                     msg.error_description.as_deref().unwrap_or("Unknown error"),
                 );
@@ -309,7 +307,7 @@ impl KafkaConsumer {
             }
             None => {
                 let error_json = build_ocpp_call_error(
-                    &msg.unique_id,
+                    &msg.unique_id.as_deref().unwrap_or(""),
                     msg.error_code.as_deref().unwrap_or("InternalError"),
                     msg.error_description.as_deref().unwrap_or("Unknown error"),
                 );
@@ -322,7 +320,7 @@ impl KafkaConsumer {
 
     // 云端下发的 Call 命令：转发至充电桩并注册下行 pending 请求
     async fn handle_call(&self, msg: &CloudMessage, charge_point_id: &str) {
-        let call_json = build_ocpp_call(&msg.action, &msg.unique_id, msg.payload.clone());
+        let call_json = build_ocpp_call(&msg.action.as_deref().unwrap_or(""), &msg.unique_id.as_deref().unwrap_or(""), msg.payload.clone().unwrap_or(serde_json::Value::Null));
 
         if self
             .connection_manager
@@ -337,9 +335,9 @@ impl KafkaConsumer {
                 if let Some(meta) = meta {
                     tracker
                         .register(crate::response_channel::PendingRequest {
-                            unique_id: msg.unique_id.clone(),
+                            unique_id: msg.unique_id.clone().unwrap_or_default(),
                             charge_point_id: charge_point_id.to_string(),
-                            action: msg.action.clone(),
+                            action: msg.action.clone().unwrap_or_default(),
                             direction: MessageDirection::Downstream,
                             created_at: std::time::Instant::now(),
                             response_tx: meta.response_tx,

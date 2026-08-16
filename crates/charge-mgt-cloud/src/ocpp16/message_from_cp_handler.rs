@@ -14,7 +14,7 @@ use serde::Serialize;
 pub trait Handler<T: Serialize> {
     async fn handle(
         state: &crate::state::AppState,
-        msg: &crate::ocpp16::envelope::CloudMessage,
+        msg: &charge_mgt_common::ocpp16::CloudMessage,
     ) -> Result<serde_json::Value, AppError> {
         let r = Self::handel_detail(state, msg).await?;
 
@@ -22,16 +22,16 @@ pub trait Handler<T: Serialize> {
     }
     async fn handel_detail(
         state: &crate::state::AppState,
-        msg: &crate::ocpp16::envelope::CloudMessage,
+        msg: &charge_mgt_common::ocpp16::CloudMessage,
     ) -> Result<T, AppError>;
 }
 pub struct UnknownRequest;
 impl Handler<String> for UnknownRequest {
     async fn handel_detail(
         _state: &crate::state::AppState,
-        msg: &crate::ocpp16::envelope::CloudMessage,
+        msg: &charge_mgt_common::ocpp16::CloudMessage,
     ) -> Result<std::string::String, AppError> {
-        let action = msg.action.as_str();
+        let action = msg.action.as_deref().unwrap_or("");
         Err(AppError::OCPP_1_6_ERROR {
             action: action.into(),
             detail: "action not implemented".into(),

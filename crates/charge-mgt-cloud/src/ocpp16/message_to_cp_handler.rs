@@ -4,8 +4,8 @@ use ocpp_1_6::{CALL, CALLERROR, CALLRESULT};
 use serde::{Deserialize, Serialize};
 
 use crate::error::AppError;
-use crate::ocpp16::envelope::CloudMessage;
 use crate::state::AppState;
+use charge_mgt_common::ocpp16::CloudMessage;
 
 // 云平台向充电桩发送请求
 pub mod cancel_reservation;
@@ -33,14 +33,20 @@ pub const MQ_RESP_TIMEOUT: Duration = Duration::from_secs(10);
 pub trait Handler<T: Serialize> {
     /// HTTP 出站入口：`handle_detail_http` + 序列化为 `serde_json::Value`。
     #[cfg(feature = "message_by_http")]
-    async fn handle_http(state: &AppState, msg: &CloudMessage) -> Result<serde_json::Value, AppError> {
+    async fn handle_http(
+        state: &AppState,
+        msg: &CloudMessage,
+    ) -> Result<serde_json::Value, AppError> {
         let r = Self::handle_detail_http(state, msg).await?;
         Ok(serde_json::to_value(&r)?)
     }
 
     /// MQ 出站入口：`handle_detail_mq` + 序列化为 `serde_json::Value`。
     #[cfg(feature = "message_by_mq")]
-    async fn handle_mq(state: &AppState, msg: &CloudMessage) -> Result<serde_json::Value, AppError> {
+    async fn handle_mq(
+        state: &AppState,
+        msg: &CloudMessage,
+    ) -> Result<serde_json::Value, AppError> {
         let r = Self::handle_detail_mq(state, msg).await?;
         Ok(serde_json::to_value(&r)?)
     }
@@ -71,38 +77,63 @@ where
     let producer = state.producer()?;
     let mq = state.mq_dispatcher()?;
 
-    let ocpp_call = serde_json::json!([CALL, &msg.unique_id, msg.action, msg.payload]);
+    let ocpp_call = serde_json::json!([
+        CALL,
+        &msg.unique_id.as_deref().unwrap_or(""),
+        msg.action.as_deref().unwrap_or(""),
+        msg.payload
+    ]);
     let call_bytes = serde_json::to_vec(&ocpp_call).map_err(|e| AppError::OCPP_1_6_ERROR {
         action: action_label.to_string(),
-        detail: format!("请求ID {}, 序列化 CALL 失败：{e}", msg.unique_id),
+        detail: format!(
+            "请求ID {}, 序列化 CALL 失败：{e}",
+            msg.unique_id.as_deref().unwrap_or("")
+        ),
     })?;
 
     producer
-        .send_call(&msg.csms_request_cp_message_mq_topic, &msg.unique_id, &call_bytes)
+        .send_call(
+            &msg.csms_request_cp_message_mq_topic
+                .as_deref()
+                .unwrap_or(""),
+            &msg.unique_id.as_deref().unwrap_or(""),
+            &call_bytes,
+        )
         .await
         .map_err(|e| AppError::OCPP_1_6_ERROR {
             action: action_label.to_string(),
-            detail: format!("请求ID {}, 发送 CALL 失败：{e}", msg.unique_id),
+            detail: format!(
+                "请求ID {}, 发送 CALL 失败：{e}",
+                msg.unique_id.as_deref().unwrap_or("")
+            ),
         })?;
 
-    let resp = mq.await_response(&msg.unique_id, MQ_RESP_TIMEOUT).await?;
+    let resp = mq
+        .await_response(&msg.unique_id.as_deref().unwrap_or(""), MQ_RESP_TIMEOUT)
+        .await?;
     let arr: Vec<serde_json::Value> =
         serde_json::from_slice(&resp.bytes).map_err(|e| AppError::OCPP_1_6_ERROR {
             action: action_label.to_string(),
-            detail: format!("请求ID {}, MQ 响应 JSON 解析失败：{e}", msg.unique_id),
+            detail: format!(
+                "请求ID {}, MQ 响应 JSON 解析失败：{e}",
+                msg.unique_id.as_deref().unwrap_or("")
+            ),
         })?;
 
     match arr.first().and_then(|v| v.as_i64()) {
         Some(t) if t == CALLRESULT => {
             let payload = arr.get(2).ok_or_else(|| AppError::OCPP_1_6_ERROR {
                 action: action_label.to_string(),
-                detail: format!("请求ID {}, CALLRESULT 缺少 payload", msg.unique_id),
+                detail: format!(
+                    "请求ID {}, CALLRESULT 缺少 payload",
+                    msg.unique_id.as_deref().unwrap_or("")
+                ),
             })?;
             serde_json::from_value(payload.clone()).map_err(|e| AppError::OCPP_1_6_ERROR {
                 action: action_label.to_string(),
                 detail: format!(
                     "请求ID {}, 反序列化 Confirmation 失败：{e}, raw={payload}",
-                    msg.unique_id
+                    msg.unique_id.as_deref().unwrap_or("")
                 ),
             })
         }
@@ -111,12 +142,18 @@ where
             let desc = arr.get(3).and_then(|v| v.as_str()).unwrap_or("");
             Err(AppError::OCPP_1_6_ERROR {
                 action: action_label.to_string(),
-                detail: format!("请求ID {}, 桩返回 CALLERROR [{code}]: {desc}", msg.unique_id),
+                detail: format!(
+                    "请求ID {}, 桩返回 CALLERROR [{code}]: {desc}",
+                    msg.unique_id.as_deref().unwrap_or("")
+                ),
             })
         }
         other => Err(AppError::OCPP_1_6_ERROR {
             action: action_label.to_string(),
-            detail: format!("请求ID {}, 未知 MQ 响应类型：{other:?}", msg.unique_id),
+            detail: format!(
+                "请求ID {}, 未知 MQ 响应类型：{other:?}",
+                msg.unique_id.as_deref().unwrap_or("")
+            ),
         }),
     }
 }
@@ -138,26 +175,44 @@ where
 {
     let sender = state.http_sender().map_err(|e| AppError::OCPP_1_6_ERROR {
         action: action_label.to_string(),
-        detail: format!("请求ID {}, 获取 HTTP sender 失败：{e}", msg.unique_id),
+        detail: format!(
+            "请求ID {}, 获取 HTTP sender 失败：{e}",
+            msg.unique_id.as_deref().unwrap_or("")
+        ),
     })?;
 
-    let ocpp_call = serde_json::json!([CALL, &msg.unique_id, msg.action, msg.payload]);
+    let ocpp_call = serde_json::json!([
+        CALL,
+        &msg.unique_id.as_deref().unwrap_or(""),
+        msg.action.as_deref().unwrap_or(""),
+        msg.payload
+    ]);
 
     let resp_value = sender
-        .post_ocpp(&msg.csms_request_cp_message_http_url, &ocpp_call)
+        .post_ocpp(
+            &msg.csms_request_cp_message_http_url
+                .as_deref()
+                .unwrap_or(""),
+            &ocpp_call,
+        )
         .await
         .map_err(|e| AppError::OCPP_1_6_ERROR {
             action: action_label.to_string(),
-            detail: format!("请求ID {}, HTTP 请求失败：{e}", msg.unique_id),
+            detail: format!(
+                "请求ID {}, HTTP 请求失败：{e}",
+                msg.unique_id.as_deref().unwrap_or("")
+            ),
         })?;
 
-    let arr = resp_value.as_array().ok_or_else(|| AppError::OCPP_1_6_ERROR {
-        action: action_label.to_string(),
-        detail: format!(
-            "请求ID {}, OCPP 响应不是有效数组：{resp_value}",
-            msg.unique_id
-        ),
-    })?;
+    let arr = resp_value
+        .as_array()
+        .ok_or_else(|| AppError::OCPP_1_6_ERROR {
+            action: action_label.to_string(),
+            detail: format!(
+                "请求ID {}, OCPP 响应不是有效数组：{resp_value}",
+                msg.unique_id.as_deref().unwrap_or("")
+            ),
+        })?;
 
     match arr.first().and_then(|v| v.as_i64()) {
         Some(t) if t == CALLRESULT => {
@@ -165,14 +220,14 @@ where
                 action: action_label.to_string(),
                 detail: format!(
                     "请求ID {}, CALLRESULT 缺少 payload 字段：{resp_value}",
-                    msg.unique_id
+                    msg.unique_id.as_deref().unwrap_or("")
                 ),
             })?;
             serde_json::from_value(payload.clone()).map_err(|e| AppError::OCPP_1_6_ERROR {
                 action: action_label.to_string(),
                 detail: format!(
                     "请求ID {}, 反序列化 Confirmation 失败：{e}, raw={payload}",
-                    msg.unique_id
+                    msg.unique_id.as_deref().unwrap_or("")
                 ),
             })
         }
@@ -181,12 +236,18 @@ where
             let desc = arr.get(3).and_then(|v| v.as_str()).unwrap_or("");
             Err(AppError::OCPP_1_6_ERROR {
                 action: action_label.to_string(),
-                detail: format!("请求ID {}, 桩返回 CALLERROR [{code}]: {desc}", msg.unique_id),
+                detail: format!(
+                    "请求ID {}, 桩返回 CALLERROR [{code}]: {desc}",
+                    msg.unique_id.as_deref().unwrap_or("")
+                ),
             })
         }
         other => Err(AppError::OCPP_1_6_ERROR {
             action: action_label.to_string(),
-            detail: format!("请求ID {}, 未知 OCPP 消息类型：{other:?}", msg.unique_id),
+            detail: format!(
+                "请求ID {}, 未知 OCPP 消息类型：{other:?}",
+                msg.unique_id.as_deref().unwrap_or("")
+            ),
         }),
     }
 }
@@ -195,7 +256,7 @@ pub struct UnknownRequest;
 impl Handler<String> for UnknownRequest {
     #[cfg(feature = "message_by_http")]
     async fn handle_detail_http(_state: &AppState, msg: &CloudMessage) -> Result<String, AppError> {
-        let action = msg.action.as_str();
+        let action = msg.action.as_deref().unwrap_or("");
         Err(AppError::OCPP_1_6_ERROR {
             action: action.to_string(),
             detail: "not implemented".to_string(),
@@ -204,7 +265,7 @@ impl Handler<String> for UnknownRequest {
 
     #[cfg(feature = "message_by_mq")]
     async fn handle_detail_mq(_state: &AppState, msg: &CloudMessage) -> Result<String, AppError> {
-        let action = msg.action.as_str();
+        let action = msg.action.as_deref().unwrap_or("");
         Err(AppError::OCPP_1_6_ERROR {
             action: action.to_string(),
             detail: "not implemented".to_string(),

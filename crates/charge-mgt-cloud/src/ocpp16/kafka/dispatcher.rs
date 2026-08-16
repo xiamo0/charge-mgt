@@ -1,8 +1,8 @@
 use crate::error::AppError;
 use crate::ocpp16::entity::sent_messages;
-use crate::ocpp16::envelope::CloudMessage;
 use crate::ocpp16::message_from_cp_handler::{Handler, UnknownRequest};
 use crate::state::AppState;
+use charge_mgt_common::ocpp16::CloudMessage;
 use chrono::Local;
 use ocpp_1_6::calls::{
     AuthorizeRequest, BootNotificationRequest, DataTransferRequest, HeartbeatRequest,
@@ -37,11 +37,11 @@ impl MessageDispatcher {
         let db = self.state.db()?;
         let now = Local::now().with_timezone(Local::now().offset());
         let new_message = sent_messages::ActiveModel {
-            unique_id: Set(msg.unique_id.clone()),
-            charge_point_id: Set(msg.charge_point_id.clone()),
-            direction: Set(msg.message_type.clone()),
-            action: Set(msg.action.clone()),
-            message_type: Set(msg.message_type.clone()),
+            unique_id: Set(msg.unique_id.clone().unwrap_or_default()),
+            charge_point_id: Set(msg.charge_point_id.clone().unwrap_or_default()),
+            direction: Set(msg.message_type.clone().unwrap_or_default()),
+            action: Set(msg.action.clone().unwrap_or_default()),
+            message_type: Set(msg.message_type.clone().unwrap_or_default()),
             received_at: Set(now),
             processed_at: Set(now),
         };
@@ -57,18 +57,18 @@ impl MessageDispatcher {
 
         match res {
             TryInsertResult::Inserted(_) => {
-                info!(unique_id = %msg.unique_id, "新消息，开始处理");
+                info!(unique_id = %msg.unique_id.as_deref().unwrap_or(""), "新消息，开始处理");
             }
             TryInsertResult::Conflicted => {
                 info!(
-                    unique_id = %msg.unique_id,
+                    unique_id = %msg.unique_id.as_deref().unwrap_or(""),
                     "重复消息，跳过（幂等保护）"
                 );
                 return Ok(());
             }
             TryInsertResult::Empty => {
                 warn!(
-                    unique_id = %msg.unique_id,
+                    unique_id = %msg.unique_id.as_deref().unwrap_or(""),
                     "消息已存在但未插入，可能是数据库异常，跳过"
                 );
                 return Ok(());
@@ -78,8 +78,8 @@ impl MessageDispatcher {
         let handler_result = Self::route_handler(&self.state, &msg).await;
 
         let response = match handler_result {
-            Ok(payload) => msg.new_call_result(payload),
-            Err(e) => msg.new_call_error(),
+            Ok(payload) => msg.to_call_result(payload),
+            Err(_) => msg.to_call_error(),
         };
 
         let resp_bytes = serde_json::to_vec(&response).map_err(|e| AppError::OCPP_1_6_ERROR {
@@ -90,8 +90,11 @@ impl MessageDispatcher {
         // Kafka producer 不可用 → 直接返回错误；让 Kafka offset 不提交，
         // 下次重试该消息，避免桩侧响应永远丢失。
         let pr = self.state.producer()?;
-        let topic = &msg.csms_response_cp_message_mq_topic;
-        pr.send_resp(topic, &msg.unique_id, &resp_bytes)
+        let topic = &msg
+            .csms_response_cp_message_mq_topic
+            .as_deref()
+            .unwrap_or("");
+        pr.send_resp(topic, &msg.unique_id.as_deref().unwrap_or(""), &resp_bytes)
             .await
             .map_err(|e| AppError::OCPP_1_6_ERROR {
                 action: "mq".to_string(),
@@ -105,7 +108,7 @@ impl MessageDispatcher {
         state: &AppState,
         msg: &CloudMessage,
     ) -> Result<serde_json::Value, AppError> {
-        match msg.action.as_str() {
+        match msg.action.as_deref().unwrap_or("") {
             ACTION_BOOT_NOTIFICATION => BootNotificationRequest::handle(state, msg).await,
             ACTION_HEARTBEAT => HeartbeatRequest::handle(state, msg).await,
             ACTION_AUTHORIZE => AuthorizeRequest::handle(state, msg).await,

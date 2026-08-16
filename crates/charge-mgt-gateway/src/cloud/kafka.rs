@@ -6,7 +6,7 @@ use rdkafka::ClientConfig;
 use rdkafka::producer::FutureProducer;
 use tracing::{error, info};
 
-use crate::cloud::message::CloudMessage;
+use charge_mgt_common::ocpp16::CloudMessage;
 use crate::config::KafkaConfig;
 use crate::error::{GatewayError, Result};
 
@@ -39,15 +39,15 @@ impl KafkaProducer {
         })
     }
 
-    /// 将消息序列化后发送到 `{prefix}.{req_suffix}.{vendor}` 主题
+    /// 将消息序列化后发送到 `{prefix}.req.{vendor}` 主题
     pub async fn send(&self, msg: &CloudMessage) -> Result<()> {
-        let topic = msg.req_topic(&self.topic_prefix, &self.req_topic_suffix);
+        let topic = msg.req_topic(&self.topic_prefix);
         let payload = serde_json::to_string(msg)
             .map_err(|e| GatewayError::Codec(format!("消息序列化失败: {}", e)))?;
 
         let record = rdkafka::producer::FutureRecord::to(&topic)
-            .payload(&payload)
-            .key(&msg.charge_point_id);
+            .payload(payload.as_bytes())
+            .key(msg.charge_point_id.as_deref().unwrap_or("").as_bytes());
 
         self.producer
             .send(record, std::time::Duration::from_secs(5))
@@ -59,7 +59,7 @@ impl KafkaProducer {
 
         info!(
             "[KAFKA] 消息已发送，主题={}, 键={}",
-            topic, msg.charge_point_id
+            topic, msg.charge_point_id.as_deref().unwrap_or("")
         );
         Ok(())
     }
@@ -85,7 +85,7 @@ impl MockKafkaProducer {
 
     /// 模拟发送，仅打印目标主题和 payload 长度
     pub async fn send(&self, msg: &CloudMessage) -> Result<()> {
-        let topic = msg.req_topic(&self.topic_prefix, &self.req_topic_suffix);
+        let topic = msg.req_topic(&self.topic_prefix);
         let payload = serde_json::to_string(msg)
             .map_err(|e| GatewayError::Codec(format!("消息序列化失败: {}", e)))?;
 

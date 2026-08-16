@@ -1,14 +1,7 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+//! 跨 crate 共享的工具与协议。
+//!
+//! 目前职责：
+//! - `ocpp16::CloudMessage`：cloud ↔ gateway 之间 Kafka 消息体的单一真源
+//!   （任一方不应再自定义 `CloudMessage` 结构）
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+pub mod ocpp16;

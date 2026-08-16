@@ -2,11 +2,13 @@ use chrono::Local;
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 
 use crate::error::AppError;
-use crate::ocpp16::entity::charge_connector::{ActiveModel, Column as ConnectorColumn, Entity as Connectors};
+use crate::ocpp16::entity::charge_connector::{
+    ActiveModel, Column as ConnectorColumn, Entity as Connectors,
+};
 use crate::ocpp16::entity::enums::ConnectorType;
-use crate::ocpp16::envelope::CloudMessage;
 use crate::ocpp16::message_from_cp_handler::Handler;
 use crate::state::AppState;
+use charge_mgt_common::ocpp16::CloudMessage;
 use ocpp_1_6::ACTION_STATUS_NOTIFICATION_CONFIRMATION;
 use ocpp_1_6::calls::StatusNotificationRequest;
 use ocpp_1_6::confs::StatusNotificationConfirmation;
@@ -16,7 +18,8 @@ impl Handler<StatusNotificationConfirmation> for StatusNotificationRequest {
         state: &AppState,
         msg: &CloudMessage,
     ) -> Result<StatusNotificationConfirmation, AppError> {
-        let req: StatusNotificationRequest = serde_json::from_value(msg.payload.clone())?;
+        let req: StatusNotificationRequest =
+            serde_json::from_value(msg.payload.clone().unwrap_or(serde_json::Value::Null))?;
 
         let db = state.db()?;
         let connector_id = req.connector_id.to_string();
@@ -49,7 +52,7 @@ impl Handler<StatusNotificationConfirmation> for StatusNotificationRequest {
                 // 桩首次上报某连接器 → on-demand 创建（无 HTTP 创建端点）。
                 // connector_type 占位为 GbtDc，可通过 PATCH 修正。
                 let mut a: ActiveModel = Default::default();
-                a.charge_point_id = Set(msg.charge_point_id.clone());
+                a.charge_point_id = Set(msg.charge_point_id.clone().unwrap_or_default());
                 a.connector_id = Set(connector_id);
                 a.connector_type = Set(ConnectorType::GbtDc);
                 a.status = Set(status_str);

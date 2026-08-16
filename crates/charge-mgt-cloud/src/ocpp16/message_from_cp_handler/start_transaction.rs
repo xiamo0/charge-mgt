@@ -5,9 +5,9 @@ use sea_orm::{ActiveModelTrait, Set};
 use crate::error::AppError;
 use crate::ocpp16::entity::charge_transaction::ActiveModel;
 use crate::ocpp16::entity::enums::{PaymentStatus, TransactionStatus};
-use crate::ocpp16::envelope::CloudMessage;
 use crate::ocpp16::message_from_cp_handler::Handler;
 use crate::state::AppState;
+use charge_mgt_common::ocpp16::CloudMessage;
 use ocpp_1_6::ACTION_START_TRANSACTION_CONFIRMATION;
 use ocpp_1_6::calls::StartTransactionRequest;
 use ocpp_1_6::confs::StartTransactionConfirmation;
@@ -17,7 +17,8 @@ impl Handler<StartTransactionConfirmation> for StartTransactionRequest {
         state: &AppState,
         msg: &CloudMessage,
     ) -> Result<StartTransactionConfirmation, AppError> {
-        let req: StartTransactionRequest = serde_json::from_value(msg.payload.clone())?;
+        let req: StartTransactionRequest =
+            serde_json::from_value(msg.payload.clone().unwrap_or(serde_json::Value::Null))?;
 
         let db = state.db()?;
         let now = Local::now().naive_local();
@@ -31,7 +32,7 @@ impl Handler<StartTransactionConfirmation> for StartTransactionRequest {
         let mut active: ActiveModel = Default::default();
         active.transaction_id = Set(transaction_id.to_string());
         active.tag_id = Set(req.id_tag);
-        active.charge_point_id = Set(msg.charge_point_id.clone());
+        active.charge_point_id = Set(msg.charge_point_id.clone().unwrap_or_default());
         active.connector_id = Set(req.connector_id.to_string());
         active.status = Set(TransactionStatus::InProgress);
         active.start_time = Set(now);

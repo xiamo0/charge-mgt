@@ -1,4 +1,3 @@
-pub mod envelope;
 pub mod message_from_cp_handler;
 pub mod message_to_cp_handler;
 
