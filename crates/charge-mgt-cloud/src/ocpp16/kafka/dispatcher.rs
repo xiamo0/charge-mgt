@@ -5,13 +5,15 @@ use crate::state::AppState;
 use charge_mgt_common::ocpp16::CloudMessage;
 use chrono::Local;
 use ocpp_1_6::calls::{
-    AuthorizeRequest, BootNotificationRequest, DataTransferRequest, HeartbeatRequest,
+    AuthorizeRequest, BootNotificationRequest, DataTransferRequest,
+    DiagnosticsStatusNotificationRequest, FirmwareStatusNotificationRequest, HeartbeatRequest,
     MeterValuesRequest, StartTransactionRequest, StatusNotificationRequest, StopTransactionRequest,
 };
 use ocpp_1_6::protocol::{
-    ACTION_AUTHORIZE, ACTION_BOOT_NOTIFICATION, ACTION_DATA_TRANSFER, ACTION_HEARTBEAT,
-    ACTION_METER_VALUES, ACTION_START_TRANSACTION, ACTION_STATUS_NOTIFICATION,
-    ACTION_STOP_TRANSACTION,
+    ACTION_AUTHORIZE, ACTION_BOOT_NOTIFICATION, ACTION_DATA_TRANSFER,
+    ACTION_DIAGNOSTICS_STATUS_NOTIFICATION, ACTION_FIRMWARE_STATUS_NOTIFICATION,
+    ACTION_HEARTBEAT, ACTION_METER_VALUES, ACTION_START_TRANSACTION,
+    ACTION_STATUS_NOTIFICATION, ACTION_STOP_TRANSACTION,
 };
 use sea_orm::{EntityTrait, Set, TryInsertResult};
 use tracing::{info, warn};
@@ -117,6 +119,12 @@ impl MessageDispatcher {
             ACTION_METER_VALUES => MeterValuesRequest::handle(state, msg).await,
             ACTION_STATUS_NOTIFICATION => StatusNotificationRequest::handle(state, msg).await,
             ACTION_DATA_TRANSFER => DataTransferRequest::handle(state, msg).await,
+            ACTION_DIAGNOSTICS_STATUS_NOTIFICATION => {
+                DiagnosticsStatusNotificationRequest::handle(state, msg).await
+            }
+            ACTION_FIRMWARE_STATUS_NOTIFICATION => {
+                FirmwareStatusNotificationRequest::handle(state, msg).await
+            }
 
             _other => UnknownRequest::handle(state, msg).await,
         }

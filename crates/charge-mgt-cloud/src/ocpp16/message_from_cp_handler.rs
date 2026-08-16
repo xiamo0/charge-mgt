@@ -2,6 +2,8 @@
 pub mod authorize;
 pub mod boot_notification;
 pub mod data_transfer;
+pub mod diagnostics_status_notification;
+pub mod firmware_status_notification;
 pub mod heartbeat;
 pub mod meter_values;
 pub mod start_transaction;
