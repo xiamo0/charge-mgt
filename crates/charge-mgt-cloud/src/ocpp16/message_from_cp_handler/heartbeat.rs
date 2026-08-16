@@ -1,35 +1,33 @@
+use chrono::Local;
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+
 use crate::error::AppError;
 use crate::ocpp16::entity::charge_point::{Column as CpColumn, Entity as ChargePoints};
+use crate::ocpp16::envelope::CloudMessage;
 use crate::ocpp16::message_from_cp_handler::Handler;
-use chrono::Local;
+use crate::state::AppState;
+use ocpp_1_6::ACTION_HEARTBEAT_CONFIRMATION;
 use ocpp_1_6::calls::HeartbeatRequest;
 use ocpp_1_6::confs::heartbeat_conf::HeartbeatConfirmation;
-use sea_orm::sea_query::Expr;
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
-use tracing::log;
 
 impl Handler<HeartbeatConfirmation> for HeartbeatRequest {
     async fn handel_detail(
-        state: &crate::state::AppState,
-        msg: &crate::ocpp16::envelope::CloudMessage,
+        state: &AppState,
+        msg: &CloudMessage,
     ) -> Result<HeartbeatConfirmation, AppError> {
-        // 新 schema 的 charge_point 表没有独立的 last_heartbeat_at 列，
-        // 仅在 update_time 中体现心跳时间戳。
+        let db = state.db()?;
         let now = Local::now().naive_local();
 
-        if let Ok(db) = state.db() {
-            ChargePoints::update_many()
-                .col_expr(CpColumn::UpdateTime, Expr::value(now))
-                .filter(CpColumn::ChargePointId.eq(&msg.charge_point_id))
-                .filter(CpColumn::IsDeleted.eq(0_i16))
-                .exec(db)
-                .await?;
-        } else {
-            log::error!("db not exists");
-        }
+        // 新 schema 的 charge_point 表没有独立的 last_heartbeat_at 列，
+        // 仅在 update_time 中体现心跳时间戳。
+        ChargePoints::update_many()
+            .col_expr(CpColumn::UpdateTime, sea_orm::sea_query::Expr::value(now))
+            .filter(CpColumn::ChargePointId.eq(&msg.charge_point_id))
+            .filter(CpColumn::IsDeleted.eq(0_i16))
+            .exec(db)
+            .await?;
 
         let response = HeartbeatConfirmation::new(&chrono::Utc::now().to_rfc3339());
-
         Ok(response)
     }
 }

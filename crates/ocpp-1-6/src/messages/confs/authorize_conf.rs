@@ -23,6 +23,30 @@ impl AuthorizeConfirmation {
             id_tag_info: None,
         }
     }
+
+    /// 快速创建一个 Blocked 的 AuthorizeConfirmation
+    pub fn blocked() -> Self {
+        Self {
+            status: AuthorizationStatus::Blocked,
+            id_tag_info: None,
+        }
+    }
+
+    /// 快速创建一个 Invalid 的 AuthorizeConfirmation（idTag 不存在）
+    pub fn invalid() -> Self {
+        Self {
+            status: AuthorizationStatus::Invalid,
+            id_tag_info: None,
+        }
+    }
+
+    /// 快速创建一个 Expired 的 AuthorizeConfirmation
+    pub fn expired() -> Self {
+        Self {
+            status: AuthorizationStatus::Expired,
+            id_tag_info: None,
+        }
+    }
 }
 
 #[cfg(test)]
