@@ -44,6 +44,14 @@ pub enum GatewayError {
     /// 等待云端响应超时
     #[error("超时: {0}")]
     Timeout(String),
+
+    /// TLS 握手或配置加载错误
+    #[error("TLS 错误: {0}")]
+    Tls(String),
+
+    /// OCPP 桩身份验证失败
+    #[error("认证错误: {0}")]
+    Auth(String),
 }
 
 /// 网关操作结果类型别名

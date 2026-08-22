@@ -11,4 +11,5 @@ pub mod config;
 pub mod device;
 pub mod error;
 pub mod response_channel;
+pub mod security;
 pub mod state;

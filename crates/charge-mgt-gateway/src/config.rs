@@ -3,6 +3,7 @@
 //! 通过 `CONFIG_PATH` 环境变量指定配置文件路径，默认为 `config/default`。
 
 use serde::Deserialize;
+use std::path::PathBuf;
 
 /// 网关完整配置
 #[derive(Debug, Clone, Deserialize)]
@@ -20,6 +21,50 @@ pub struct Config {
     pub redis: RedisConfig,
     /// Kafka 消息队列配置
     pub kafka: KafkaConfig,
+    /// OCPP 1.6 链路安全配置（TLS + Basic Auth 组合）
+    #[serde(default)]
+    pub ocpp_security: OcppSecurityConfig,
+}
+
+/// OCPP 1.6 桩→gateway 链路的安全配置
+///
+/// 4 种模式（mTLS 留 P2）：
+/// | auth_mode | tls.enabled | 派生模式 | 适用 |
+/// |-----------|-------------|----------|------|
+/// | none      | false       | 模式 1：明文无认证 | 内部/调试 |
+/// | none      | true        | 模式 3：TLS 无认证   | 加密但无身份 |
+/// | basic     | false       | 模式 2：明文 Basic  | 内网+密码（过渡） |
+/// | basic     | true        | 模式 4：TLS + Basic | 主流生产（OCPP 1.6 推荐） |
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct OcppSecurityConfig {
+    /// 认证模式：none / basic
+    pub auth_mode: AuthMode,
+    /// TLS 配置
+    #[serde(default)]
+    pub tls: TlsConfig,
+}
+
+/// 认证模式
+#[derive(Debug, Clone, Copy, Default, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum AuthMode {
+    /// 不要求任何认证（模式 1 / 模式 3）
+    #[default]
+    None,
+    /// HTTP Basic Auth（模式 2 / 模式 4）
+    Basic,
+}
+
+/// TLS 配置
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct TlsConfig {
+    /// 是否启用 TLS（false = 明文 ws://；true = 加密 wss://）
+    #[serde(default)]
+    pub enabled: bool,
+    /// 服务端证书 PEM 路径
+    pub cert_path: Option<PathBuf>,
+    /// 服务端私钥 PEM 路径
+    pub key_path: Option<PathBuf>,
 }
 
 /// 云端响应回传方式：Redis BLPOP 或 Kafka 响应主题

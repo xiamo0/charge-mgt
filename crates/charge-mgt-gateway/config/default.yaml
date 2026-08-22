@@ -29,3 +29,16 @@ kafka:
   cmd_topic_suffix: "cmd"
   # 响应超时秒数, 仅 kafka 模式使用
   response_timeout_secs: 30
+
+# OCPP 1.6 链路安全配置（模式 1-4，mTLS 模式 5/6 留 P2）
+# 4 种组合：
+#   auth_mode: none + tls.enabled: false  → 模式 1：明文 ws://，无认证
+#   auth_mode: none + tls.enabled: true   → 模式 3：wss://，无认证
+#   auth_mode: basic + tls.enabled: false → 模式 2：明文 Basic（仅过渡）
+#   auth_mode: basic + tls.enabled: true  → 模式 4：wss:// + Basic（OCPP 1.6 主流）
+ocpp_security:
+  auth_mode: "none"      # 开发用 none；生产推荐 "basic"
+  tls:
+    enabled: false         # 开发用 false；生产部署用 true
+    cert_path: "crates/charge-mgt-gateway/certs/server-cert.pem"
+    key_path: "crates/charge-mgt-gateway/certs/server-key.pem"

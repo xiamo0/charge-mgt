@@ -7,7 +7,10 @@ use crate::error::Result;
 use crate::response_channel::{
     KafkaResponseChannel, PendingRequestTracker, RedisResponseChannel, ResponseChannel,
 };
+use crate::security::policy::SecurityMode;
+use crate::security::tls::load_server_config;
 use std::sync::Arc;
+use tokio_rustls::TlsAcceptor;
 use tracing::info;
 
 /// 网关应用实例，持有连接管理、消息生产和响应通道等核心组件
@@ -66,8 +69,36 @@ impl Application {
     pub async fn run(&self) -> Result<()> {
         info!("正在启动 WebSocket 服务");
 
+        // 推导安全模式（TLS 开关 + Basic Auth 模式）
+        let security_mode = SecurityMode::from_config(&self.config.ocpp_security)?;
+        info!("OCPP 1.6 链路安全模式: {:?}", security_mode);
+
+        // 模式 3/4：加载 TLS 证书并构造 TlsAcceptor
+        let tls_acceptor = if security_mode.is_tls() {
+            let cert_path = self
+                .config
+                .ocpp_security
+                .tls
+                .cert_path
+                .as_ref()
+                .ok_or_else(|| crate::error::GatewayError::Config("cert_path 缺失".into()))?;
+            let key_path = self
+                .config
+                .ocpp_security
+                .tls
+                .key_path
+                .as_ref()
+                .ok_or_else(|| crate::error::GatewayError::Config("key_path 缺失".into()))?;
+            let server_config = load_server_config(cert_path, key_path)?;
+            Some(TlsAcceptor::from(server_config))
+        } else {
+            None
+        };
+
         let ws_server = WebSocketServer::new(
             self.config.device.clone(),
+            security_mode,
+            tls_acceptor,
             self.connection_manager.clone(),
             self.kafka_producer.clone(),
             self.response_channel.clone(),

@@ -2,40 +2,54 @@
 //!
 //! 监听 TCP 端口，接受充电桩 WebSocket 连接，
 //! 读写分离：读任务处理上行消息，写任务发送响应。
+//!
+//! 安全（OCPP 1.6）：
+//! - 模式 1/2：明文 ws://，无认证
+//! - 模式 3/4：wss://（rustls TLS）
+//! - 模式 2/4 的 Basic Auth 验证**留 P1**（本 PR 只支持 TLS 开关；密码验证放到 cloud 端 BootNotification 阶段）
 
 use futures_util::{SinkExt, StreamExt};
 use std::net::SocketAddr;
+use std::pin::Pin;
 use std::sync::Arc;
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, ReadHalf, WriteHalf};
 use tokio::net::TcpListener;
 use tokio::sync::mpsc;
-use tokio_tungstenite::accept_async;
+use tokio_rustls::server::TlsStream;
+use tokio_rustls::TlsAcceptor;
+use tokio_tungstenite::WebSocketStream;
+use tokio_tungstenite::{accept_async, accept_hdr_async};
 use tracing::{error, info, warn};
 
 use crate::cloud::{ConnectionManager, KafkaProducer};
 use crate::config::DeviceConfig;
 use crate::error::{GatewayError, Result};
 use crate::response_channel::ResponseChannel;
+use crate::security::policy::SecurityMode;
+
+/// 类型别名：能同时作为读写流的 trait object
+trait AsyncReadWrite: tokio::io::AsyncRead + tokio::io::AsyncWrite {}
+impl<T: tokio::io::AsyncRead + tokio::io::AsyncWrite> AsyncReadWrite for T {}
 
 /// WebSocket 服务端，管理充电桩接入
 pub struct WebSocketServer {
-    /// WebSocket 监听配置
     config: DeviceConfig,
-    /// 在线充电桩连接注册表
+    /// 安全模式（决定 TLS 是否启用）
+    security_mode: SecurityMode,
+    /// 可选 TLS acceptor（仅模式 3/4）
+    tls_acceptor: Option<TlsAcceptor>,
     connection_manager: Arc<ConnectionManager>,
-    /// Kafka 消息生产者
     kafka_producer: Arc<KafkaProducer>,
-    /// 云端响应回传通道
     response_channel: Arc<dyn ResponseChannel>,
-    /// 所属网关 ID
     gateway_id: String,
-    /// 所属网关 IP
     gateway_host: String,
 }
 
 impl WebSocketServer {
-    /// 创建 WebSocket 服务器实例
     pub fn new(
         config: DeviceConfig,
+        security_mode: SecurityMode,
+        tls_acceptor: Option<TlsAcceptor>,
         connection_manager: Arc<ConnectionManager>,
         kafka_producer: Arc<KafkaProducer>,
         response_channel: Arc<dyn ResponseChannel>,
@@ -44,6 +58,8 @@ impl WebSocketServer {
     ) -> Self {
         Self {
             config,
+            security_mode,
+            tls_acceptor,
             connection_manager,
             kafka_producer,
             response_channel,
@@ -59,12 +75,16 @@ impl WebSocketServer {
             .parse()
             .map_err(|e| GatewayError::Config(format!("无效地址: {}", e)))?;
 
-        info!("WebSocket 服务正在启动，地址: {}", addr);
+        info!(
+            "OCPP WebSocket 监听 {}://{}（安全模式: {:?}）",
+            self.security_mode.scheme(),
+            addr,
+            self.security_mode
+        );
+
         let listener = TcpListener::bind(&addr)
             .await
             .map_err(|e| GatewayError::WebSocket(format!("绑定失败: {}", e)))?;
-
-        info!("WebSocket 服务已监听: {}", addr);
 
         loop {
             match listener.accept().await {
@@ -75,9 +95,13 @@ impl WebSocketServer {
                     let response_channel = self.response_channel.clone();
                     let gateway_id = self.gateway_id.clone();
                     let gateway_host = self.gateway_host.clone();
+                    let tls_acceptor = self.tls_acceptor.clone();
+                    let security_mode = self.security_mode;
                     tokio::spawn(handle_connection(
                         stream,
                         peer_addr,
+                        security_mode,
+                        tls_acceptor,
                         connection_manager,
                         kafka_producer,
                         response_channel,
@@ -93,23 +117,62 @@ impl WebSocketServer {
     }
 }
 
-/// 处理单条 WebSocket 连接的生命周期（握手 → 读写 → 清理）
+/// 处理单条 WebSocket 连接的生命周期（TLS 握手 → WS 升级 → 业务消息）
 async fn handle_connection(
     stream: tokio::net::TcpStream,
     peer_addr: SocketAddr,
+    security_mode: SecurityMode,
+    tls_acceptor: Option<TlsAcceptor>,
     connection_manager: Arc<ConnectionManager>,
     kafka_producer: Arc<KafkaProducer>,
     response_channel: Arc<dyn ResponseChannel>,
     gateway_id: String,
     gateway_host: String,
 ) {
-    let ws_stream = match accept_async(stream).await {
-        Ok(ws) => ws,
-        Err(e) => {
-            warn!("WebSocket 握手失败，来自 {}: {}", peer_addr, e);
-            return;
+    // 1. （可选）TLS 握手 + WS 升级
+    // MaybeTlsStream::Rustls 在 tokio-tungstenite 0.21 的 __rustls-tls 私有 feature 后，
+    // 用 tokio::io::split 拆出 TLS 流读写半边，再通过 `Box<dyn AsyncReadWrite>` 抹平
+    // 为单一具体类型，让 accept_async 返回统一的 WebSocketStream<Box<...>>。
+    let ws_stream: WebSocketStream<Box<dyn AsyncReadWrite + Unpin + Send>> = match tls_acceptor {
+        Some(acceptor) => {
+            let tls = match acceptor.accept(stream).await {
+                Ok(t) => t,
+                Err(e) => {
+                    warn!("TLS 握手失败（来自 {}）: {}", peer_addr, e);
+                    return;
+                }
+            };
+            let (r, w) = tokio::io::split(tls);
+            let s: Box<dyn AsyncReadWrite + Unpin + Send> = Box::new(SplitStream(r, w));
+            match accept_async(s).await {
+                Ok(ws) => ws,
+                Err(e) => {
+                    warn!("WebSocket 升级失败（TLS 模式）, 来自 {}: {}", peer_addr, e);
+                    return;
+                }
+            }
+        }
+        None => {
+            let s: Box<dyn AsyncReadWrite + Unpin + Send> = Box::new(stream);
+            match accept_async(s).await {
+                Ok(ws) => ws,
+                Err(e) => {
+                    warn!("WebSocket 升级失败，来自 {}: {}", peer_addr, e);
+                    return;
+                }
+            }
         }
     };
+
+    // 2. Basic Auth 头校验（模式 2/4）
+    // 简化：本 PR 不做实际的密码验证（缺 DB），只记录桩的 chargePointIdentity
+    // 实际密码验证放到 cloud 端 BootNotification 阶段
+    if security_mode.requires_basic() {
+        info!(
+            "模式 {:?} 启用 Basic Auth；密码验证由 cloud 端 BootNotification 处理",
+            security_mode
+        );
+    }
 
     let (ws_write, ws_read) = ws_stream.split();
 
@@ -177,4 +240,49 @@ async fn handle_connection(
     }
 
     connection.on_disconnect().await;
+}
+
+/// 包装 `tokio::io::split(tls)` 的两端，使 `accept_async` 能直接消费
+struct SplitStream<R, W>(ReadHalf<R>, WriteHalf<W>);
+
+impl<R, W> AsyncRead for SplitStream<R, W>
+where
+    R: AsyncRead + Unpin,
+    W: Unpin,
+{
+    fn poll_read(
+        mut self: Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+        buf: &mut tokio::io::ReadBuf<'_>,
+    ) -> std::task::Poll<std::io::Result<()>> {
+        Pin::new(&mut self.0).poll_read(cx, buf)
+    }
+}
+
+impl<R, W> AsyncWrite for SplitStream<R, W>
+where
+    R: Unpin,
+    W: AsyncWrite + Unpin,
+{
+    fn poll_write(
+        mut self: Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+        buf: &[u8],
+    ) -> std::task::Poll<std::io::Result<usize>> {
+        Pin::new(&mut self.1).poll_write(cx, buf)
+    }
+
+    fn poll_flush(
+        mut self: Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<std::io::Result<()>> {
+        Pin::new(&mut self.1).poll_flush(cx)
+    }
+
+    fn poll_shutdown(
+        mut self: Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<std::io::Result<()>> {
+        Pin::new(&mut self.1).poll_shutdown(cx)
+    }
 }

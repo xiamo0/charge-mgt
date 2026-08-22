@@ -8,7 +8,7 @@ authors.workspace = true
 [dependencies]
 tokio = { workspace = true }
 serde = { workspace = true }
-serde_json = { workspace = true }
+serde_json.workspace = true
 thiserror = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = "0.3"
@@ -21,6 +21,15 @@ futures-util = "0.3"
 
 reqwest = { version = "0.11", features = ["json"] }
 config = "0.14"
+
+# TLS 协议层（rustls 纯 Rust 实现，避免 OpenSSL 系统依赖）
+rustls = { version = "0.23", default-features = false, features = ["std", "logging"] }
+rustls-pemfile = "2.2"
+tokio-rustls = "0.26"
+
+# Basic Auth：密码哈希（OWASP 推荐 argon2id）+ base64 解码
+argon2 = "0.5"
+base64 = "0.22"
 
 # Kafka
 rdkafka = { version = "0.36", features = ["cmake-build"] }
