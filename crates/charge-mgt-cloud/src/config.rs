@@ -7,6 +7,35 @@ pub struct AppConfig {
     pub cloud: CloudConfig,
     pub database: DatabaseConfig,
     pub kafka: KafkaConfig,
+    #[serde(default)]
+    pub auth: AuthConfig,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct AuthConfig {
+    /// JWT 签名密钥（HS256）。生产必须通过环境变量 CLOUD__AUTH__JWT_SECRET 覆盖
+    #[serde(default = "default_jwt_secret")]
+    pub jwt_secret: String,
+    /// access token 有效期（秒）
+    #[serde(default = "default_ttl")]
+    pub access_token_ttl_secs: u64,
+}
+
+impl Default for AuthConfig {
+    fn default() -> Self {
+        Self {
+            jwt_secret: default_jwt_secret(),
+            access_token_ttl_secs: default_ttl(),
+        }
+    }
+}
+
+fn default_jwt_secret() -> String {
+    "dev-jwt-secret-CHANGEME-0123456789".to_string()
+}
+
+fn default_ttl() -> u64 {
+    3600
 }
 
 #[derive(Debug, Clone, Deserialize)]

@@ -39,6 +39,14 @@ pub enum AppError {
     #[error("bad request: {0}")]
     BadRequest(String),
 
+    /// 未认证或 token 失效；HTTP 401。
+    #[error("unauthorized: {0}")]
+    Unauthorized(String),
+
+    /// 已认证但权限不足；HTTP 403。
+    #[error("forbidden: {0}")]
+    Forbidden(String),
+
     /// 资源冲突（如 UNIQUE 索引重复）；HTTP 409。
     #[error("conflict: {0}")]
     Conflict(String),
@@ -88,6 +96,8 @@ impl IntoResponse for AppError {
             ),
             Self::NotFound(msg) => (axum::http::StatusCode::NOT_FOUND, 404, msg.clone()),
             Self::BadRequest(msg) => (axum::http::StatusCode::BAD_REQUEST, 400, msg.clone()),
+            Self::Unauthorized(msg) => (axum::http::StatusCode::UNAUTHORIZED, 401, msg.clone()),
+            Self::Forbidden(msg) => (axum::http::StatusCode::FORBIDDEN, 403, msg.clone()),
             Self::Conflict(msg) => (axum::http::StatusCode::CONFLICT, 409, msg.clone()),
             Self::Internal(msg) => (
                 axum::http::StatusCode::INTERNAL_SERVER_ERROR,

@@ -6,6 +6,12 @@ cloud:
   # 用于 /internal/* 路由的 Bearer 认证。生产请通过环境变量覆盖
   api_key: "internal-shared-secret-CHANGEME"
 
+# HTTP 管理 API 鉴权（JWT）
+auth:
+  # 生产必须通过 CLOUD__AUTH__JWT_SECRET 环境变量覆盖
+  jwt_secret: "dev-jwt-secret-CHANGEME-0123456789"
+  access_token_ttl_secs: 3600
+
 database:
   url: "postgres://charge_mgt:charge_mgt_dev@127.0.0.1:5432/charge_mgt_cloud"
   max_connections: 10

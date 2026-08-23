@@ -96,9 +96,28 @@ fn build_router(state: AppState) -> Router {
         )),
     );
 
-    router::build()
+    // 鉴权：白名单外全部走 JWT 验证
+    let jwt_secret = state
+        .config
+        .as_ref()
+        .map(|c| c.auth.jwt_secret.clone())
+        .unwrap_or_default();
+
+    // 公开路由：登录端点
+    let public_auth = charge_mgt_cloud::auth::handler::public_router();
+
+    // 受保护路由：业务端点 + /auth/me
+    let protected = router::build()
+        .merge(charge_mgt_cloud::auth::handler::protected_router())
+        .layer(axum::middleware::from_fn(
+            charge_mgt_cloud::auth::middleware::require_auth(jwt_secret),
+        ));
+
+    Router::new()
         .route("/", get(root))
         .route("/health", get(health))
+        .nest("/api/v1", public_auth)
+        .nest("/api/v1", protected)
         .nest("/internal", internal_routes)
         .layer(Extension(state))
 }
