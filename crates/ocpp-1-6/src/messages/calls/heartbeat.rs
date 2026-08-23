@@ -63,6 +63,7 @@ impl DefaultHeartbeatHandler {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use crate::calls::DefaultHeartbeatHandler;
     use crate::calls::HeartbeatConfig;
