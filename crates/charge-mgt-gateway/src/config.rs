@@ -28,16 +28,18 @@ pub struct Config {
 
 /// OCPP 1.6 桩→gateway 链路的安全配置
 ///
-/// 4 种模式（mTLS 留 P2）：
-/// | auth_mode | tls.enabled | 派生模式 | 适用 |
-/// |-----------|-------------|----------|------|
-/// | none      | false       | 模式 1：明文无认证 | 内部/调试 |
-/// | none      | true        | 模式 3：TLS 无认证   | 加密但无身份 |
-/// | basic     | false       | 模式 2：明文 Basic  | 内网+密码（过渡） |
-/// | basic     | true        | 模式 4：TLS + Basic | 主流生产（OCPP 1.6 推荐） |
+/// 6 种模式（OCPP 1.6 Profile 1/2/3/3+Basic/3+mTLS/3+mTLS+Basic）：
+/// | auth_mode    | tls.enabled | tls.mtls | 派生模式 | 适用 |
+/// |--------------|-------------|----------|----------|------|
+/// | none         | false       | -        | 模式 1：明文无认证 | 内部/调试 |
+/// | none         | true        | -        | 模式 3：TLS 无认证 | 加密但无身份 |
+/// | basic        | false       | -        | 模式 2：明文 Basic | 内网+密码（过渡） |
+/// | basic        | true        | -        | 模式 4：TLS + Basic | 主流生产 |
+/// | mtls         | true        | enabled  | 模式 5：TLS + mTLS | 高安全 |
+/// | mtls-with-basic | true     | enabled  | 模式 6：TLS + mTLS + Basic | 最高安全 |
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct OcppSecurityConfig {
-    /// 认证模式：none / basic
+    /// 认证模式
     pub auth_mode: AuthMode,
     /// TLS 配置
     #[serde(default)]
@@ -46,13 +48,17 @@ pub struct OcppSecurityConfig {
 
 /// 认证模式
 #[derive(Debug, Clone, Copy, Default, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "kebab-case")]
 pub enum AuthMode {
     /// 不要求任何认证（模式 1 / 模式 3）
     #[default]
     None,
     /// HTTP Basic Auth（模式 2 / 模式 4）
     Basic,
+    /// 仅 mTLS（模式 5；不能 basic 模式）
+    Mtls,
+    /// mTLS + Basic Auth（模式 6）
+    MtlsWithBasic,
 }
 
 /// TLS 配置
@@ -65,6 +71,39 @@ pub struct TlsConfig {
     pub cert_path: Option<PathBuf>,
     /// 服务端私钥 PEM 路径
     pub key_path: Option<PathBuf>,
+    /// mTLS 配置（桩客户端证书校验；模式 5/6 必填）
+    #[serde(default)]
+    pub mtls: Option<MtlsConfig>,
+}
+
+/// mTLS 配置：CSMS 用 CA 证书验证桩客户端证书
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct MtlsConfig {
+    /// CA 证书 PEM 路径（用于构造 Client Cert Verifier）
+    pub ca_cert_path: PathBuf,
+    /// 客户端证书校验模式：required（拒所有无证书的连接）或 optional（允许无证书但有证书时也验）
+    #[serde(default = "default_required")]
+    pub client_auth: ClientAuthMode,
+}
+
+fn default_required() -> ClientAuthMode {
+    ClientAuthMode::Required
+}
+
+/// 客户端证书校验模式
+#[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum ClientAuthMode {
+    /// 要求所有客户端必须提供证书（mTLS 强制）
+    Required,
+    /// 可选：允许无证书的连接（一般用于同时支持 mTLS 和匿名 TLS 的过渡期）
+    Optional,
+}
+
+impl Default for ClientAuthMode {
+    fn default() -> Self {
+        Self::Required
+    }
 }
 
 /// 云端响应回传方式：Redis BLPOP 或 Kafka 响应主题

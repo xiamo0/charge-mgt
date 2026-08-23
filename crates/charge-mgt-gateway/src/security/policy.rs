@@ -1,12 +1,12 @@
 //! OCPP 1.6 链路安全策略。
 //!
 //! `SecurityMode` 是从配置推导出的内部枚举；
-//! 启动时校验 config 组合合法（4 种合法 + 2 种 mTLS 留 P2）。
+//! 启动时校验 config 组合合法（6 种）。
 
 use crate::config::{AuthMode, OcppSecurityConfig, TlsConfig};
 use crate::error::GatewayError;
 
-/// OCPP 1.6 链路安全模式（4 种 + 2 种 P2）
+/// OCPP 1.6 链路安全模式（6 种）
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SecurityMode {
     /// 模式 1：明文 ws://，无认证
@@ -17,17 +17,29 @@ pub enum SecurityMode {
     TlsOnly,
     /// 模式 4：wss:// + Basic Auth（OCPP 1.6 主流）
     TlsWithBasic,
+    /// 模式 5：wss:// + mTLS（双向证书认证）
+    TlsWithMtls,
+    /// 模式 6：wss:// + mTLS + Basic Auth（最高安全）
+    TlsWithMtlsAndBasic,
 }
 
 impl SecurityMode {
     /// 从配置推导模式，启动时校验合法性
     pub fn from_config(cfg: &OcppSecurityConfig) -> Result<Self, GatewayError> {
         let tls = cfg.tls.enabled;
-        let m = match (&cfg.auth_mode, tls) {
-            (AuthMode::None, false) => Self::NoTlsNoAuth,
-            (AuthMode::None, true) => Self::TlsOnly,
-            (AuthMode::Basic, false) => Self::BasicNoTls,
-            (AuthMode::Basic, true) => Self::TlsWithBasic,
+        let mtls = cfg.tls.mtls.as_ref().map(|m| m.ca_cert_path.exists()).unwrap_or(false);
+        let m = match (&cfg.auth_mode, tls, mtls) {
+            (AuthMode::None, false, _) => Self::NoTlsNoAuth,
+            (AuthMode::None, true, false) => Self::TlsOnly,
+            (AuthMode::Basic, false, _) => Self::BasicNoTls,
+            (AuthMode::Basic, true, false) => Self::TlsWithBasic,
+            (AuthMode::Mtls, true, true) => Self::TlsWithMtls,
+            (AuthMode::MtlsWithBasic, true, true) => Self::TlsWithMtlsAndBasic,
+            (mode, tls_on, mtls_on) => {
+                return Err(GatewayError::Config(format!(
+                    "非法安全配置: auth_mode={mode:?}, tls={tls_on}, mtls={mtls_on}"
+                )));
+            }
         };
 
         if tls {
@@ -40,18 +52,29 @@ impl SecurityMode {
     pub fn scheme(&self) -> &'static str {
         match self {
             Self::NoTlsNoAuth | Self::BasicNoTls => "ws",
-            Self::TlsOnly | Self::TlsWithBasic => "wss",
+            Self::TlsOnly
+            | Self::TlsWithBasic
+            | Self::TlsWithMtls
+            | Self::TlsWithMtlsAndBasic => "wss",
         }
     }
 
     /// 模式是否启用 TLS
     pub fn is_tls(&self) -> bool {
-        matches!(self, Self::TlsOnly | Self::TlsWithBasic)
+        !matches!(self, Self::NoTlsNoAuth | Self::BasicNoTls)
+    }
+
+    /// 模式是否要求 mTLS（双向证书认证）
+    pub fn requires_mtls(&self) -> bool {
+        matches!(self, Self::TlsWithMtls | Self::TlsWithMtlsAndBasic)
     }
 
     /// 模式是否要求 Basic Auth
     pub fn requires_basic(&self) -> bool {
-        matches!(self, Self::BasicNoTls | Self::TlsWithBasic)
+        matches!(
+            self,
+            Self::BasicNoTls | Self::TlsWithBasic | Self::TlsWithMtlsAndBasic
+        )
     }
 }
 
@@ -79,6 +102,7 @@ fn validate_tls_paths(tls: &TlsConfig) -> Result<(), GatewayError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::MtlsConfig;
     use std::path::PathBuf;
 
     fn cfg(auth: AuthMode, tls: bool, cert: bool, key: bool) -> OcppSecurityConfig {
@@ -88,6 +112,22 @@ mod tests {
                 enabled: tls,
                 cert_path: if cert { Some(PathBuf::from("/dev/null")) } else { None },
                 key_path: if key { Some(PathBuf::from("/dev/null")) } else { None },
+                mtls: None,
+            },
+        }
+    }
+
+    fn cfg_mtls(auth: AuthMode, with_ca: bool) -> OcppSecurityConfig {
+        OcppSecurityConfig {
+            auth_mode: auth,
+            tls: TlsConfig {
+                enabled: true,
+                cert_path: Some(PathBuf::from("/dev/null")),
+                key_path: Some(PathBuf::from("/dev/null")),
+                mtls: with_ca.then(|| MtlsConfig {
+                    ca_cert_path: PathBuf::from("/dev/null"),
+                    client_auth: Default::default(),
+                }),
             },
         }
     }
@@ -125,6 +165,29 @@ mod tests {
     }
 
     #[test]
+    fn mode5_tls_with_mtls() {
+        assert_eq!(
+            SecurityMode::from_config(&cfg_mtls(AuthMode::Mtls, true)).unwrap(),
+            SecurityMode::TlsWithMtls
+        );
+    }
+
+    #[test]
+    fn mode6_tls_with_mtls_and_basic() {
+        assert_eq!(
+            SecurityMode::from_config(&cfg_mtls(AuthMode::MtlsWithBasic, true)).unwrap(),
+            SecurityMode::TlsWithMtlsAndBasic
+        );
+    }
+
+    #[test]
+    fn mtls_requires_ca() {
+        // mtls 模式但没配 ca_cert_path → 非法
+        let e = SecurityMode::from_config(&cfg_mtls(AuthMode::Mtls, false)).unwrap_err();
+        assert!(format!("{e}").contains("非法安全配置"));
+    }
+
+    #[test]
     fn tls_requires_cert_and_key() {
         let e = SecurityMode::from_config(&cfg(AuthMode::None, true, false, true)).unwrap_err();
         assert!(format!("{e}").contains("cert_path"));
@@ -138,6 +201,8 @@ mod tests {
         assert_eq!(SecurityMode::BasicNoTls.scheme(), "ws");
         assert_eq!(SecurityMode::TlsOnly.scheme(), "wss");
         assert_eq!(SecurityMode::TlsWithBasic.scheme(), "wss");
+        assert_eq!(SecurityMode::TlsWithMtls.scheme(), "wss");
+        assert_eq!(SecurityMode::TlsWithMtlsAndBasic.scheme(), "wss");
     }
 
     #[test]
@@ -146,5 +211,17 @@ mod tests {
         assert!(SecurityMode::BasicNoTls.requires_basic());
         assert!(!SecurityMode::TlsOnly.requires_basic());
         assert!(SecurityMode::TlsWithBasic.requires_basic());
+        assert!(!SecurityMode::TlsWithMtls.requires_basic());
+        assert!(SecurityMode::TlsWithMtlsAndBasic.requires_basic());
+    }
+
+    #[test]
+    fn requires_mtls_per_mode() {
+        assert!(!SecurityMode::NoTlsNoAuth.requires_mtls());
+        assert!(!SecurityMode::BasicNoTls.requires_mtls());
+        assert!(!SecurityMode::TlsOnly.requires_mtls());
+        assert!(!SecurityMode::TlsWithBasic.requires_mtls());
+        assert!(SecurityMode::TlsWithMtls.requires_mtls());
+        assert!(SecurityMode::TlsWithMtlsAndBasic.requires_mtls());
     }
 }
