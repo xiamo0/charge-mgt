@@ -7,7 +7,7 @@
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
 #[sea_orm(table_name = "charge_point_ocpp16")]
 pub struct Model {
     /// 充电桩唯一标识（WS 请求地址中夹带），业务主键，无自增
@@ -40,6 +40,9 @@ pub struct Model {
     /// 安装投运日期
     #[sea_orm(column_type = "Date")]
     pub install_date: Option<Date>,
+    /// Basic Auth 密码哈希（argon2id）。仅 Basic Auth 模式使用
+    #[sea_orm(column_type = "Text", nullable)]
+    pub password_hash: Option<String>,
     /// 逻辑删除：0 正常，1 已删除
     pub is_deleted: i16,
     /// 记录创建时间（由 service 层 `Local::now()` 写入）

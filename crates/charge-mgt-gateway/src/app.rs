@@ -95,10 +95,19 @@ impl Application {
             None
         };
 
+        let http_client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(5))
+            .build()
+            .map_err(|e| {
+                crate::error::GatewayError::Config(format!("创建 HTTP 客户端失败: {e}"))
+            })?;
+
         let ws_server = WebSocketServer::new(
             self.config.device.clone(),
             security_mode,
             tls_acceptor,
+            self.config.cloud.clone(),
+            http_client,
             self.connection_manager.clone(),
             self.kafka_producer.clone(),
             self.response_channel.clone(),

@@ -3,6 +3,7 @@
 //! mTLS（模式 5/6）留 P2。
 
 pub mod auth;
+pub mod basic_auth;
 pub mod policy;
 pub mod tls;
 

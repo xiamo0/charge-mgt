@@ -4,9 +4,9 @@
 //! 读写分离：读任务处理上行消息，写任务发送响应。
 //!
 //! 安全（OCPP 1.6）：
-//! - 模式 1/2：明文 ws://，无认证
+//! - 模式 1/2：明文 ws://
 //! - 模式 3/4：wss://（rustls TLS）
-//! - 模式 2/4 的 Basic Auth 验证**留 P1**（本 PR 只支持 TLS 开关；密码验证放到 cloud 端 BootNotification 阶段）
+//! - 模式 2/4：WS 升级时调 cloud /internal/auth/verify 验证密码（fail-closed）
 
 use futures_util::{SinkExt, StreamExt};
 use std::net::SocketAddr;
@@ -22,9 +22,10 @@ use tokio_tungstenite::{accept_async, accept_hdr_async};
 use tracing::{error, info, warn};
 
 use crate::cloud::{ConnectionManager, KafkaProducer};
-use crate::config::DeviceConfig;
+use crate::config::{CloudConfig, DeviceConfig};
 use crate::error::{GatewayError, Result};
 use crate::response_channel::ResponseChannel;
+use crate::security::basic_auth::verify_via_cloud;
 use crate::security::policy::SecurityMode;
 
 /// 类型别名：能同时作为读写流的 trait object
@@ -38,6 +39,10 @@ pub struct WebSocketServer {
     security_mode: SecurityMode,
     /// 可选 TLS acceptor（仅模式 3/4）
     tls_acceptor: Option<TlsAcceptor>,
+    /// 云端配置（用于 Basic Auth 验证）
+    cloud: CloudConfig,
+    /// HTTP 客户端（Basic Auth 验证复用）
+    http_client: reqwest::Client,
     connection_manager: Arc<ConnectionManager>,
     kafka_producer: Arc<KafkaProducer>,
     response_channel: Arc<dyn ResponseChannel>,
@@ -50,6 +55,8 @@ impl WebSocketServer {
         config: DeviceConfig,
         security_mode: SecurityMode,
         tls_acceptor: Option<TlsAcceptor>,
+        cloud: CloudConfig,
+        http_client: reqwest::Client,
         connection_manager: Arc<ConnectionManager>,
         kafka_producer: Arc<KafkaProducer>,
         response_channel: Arc<dyn ResponseChannel>,
@@ -60,6 +67,8 @@ impl WebSocketServer {
             config,
             security_mode,
             tls_acceptor,
+            cloud,
+            http_client,
             connection_manager,
             kafka_producer,
             response_channel,
@@ -97,11 +106,15 @@ impl WebSocketServer {
                     let gateway_host = self.gateway_host.clone();
                     let tls_acceptor = self.tls_acceptor.clone();
                     let security_mode = self.security_mode;
+                    let cloud = self.cloud.clone();
+                    let http_client = self.http_client.clone();
                     tokio::spawn(handle_connection(
                         stream,
                         peer_addr,
                         security_mode,
                         tls_acceptor,
+                        cloud,
+                        http_client,
                         connection_manager,
                         kafka_producer,
                         response_channel,
@@ -123,6 +136,8 @@ async fn handle_connection(
     peer_addr: SocketAddr,
     security_mode: SecurityMode,
     tls_acceptor: Option<TlsAcceptor>,
+    cloud: CloudConfig,
+    http_client: reqwest::Client,
     connection_manager: Arc<ConnectionManager>,
     kafka_producer: Arc<KafkaProducer>,
     response_channel: Arc<dyn ResponseChannel>,
@@ -132,7 +147,12 @@ async fn handle_connection(
     // 1. （可选）TLS 握手 + WS 升级
     // MaybeTlsStream::Rustls 在 tokio-tungstenite 0.21 的 __rustls-tls 私有 feature 后，
     // 用 tokio::io::split 拆出 TLS 流读写半边，再通过 `Box<dyn AsyncReadWrite>` 抹平
-    // 为单一具体类型，让 accept_async 返回统一的 WebSocketStream<Box<...>>。
+    // 为单一具体类型，让 accept 返回统一的 WebSocketStream<Box<...>>。
+    //
+    // 用 accept_hdr_async 拦截升级请求头，捕获 Authorization（Basic Auth 模式 2/4）
+    let captured_auth = Arc::new(std::sync::Mutex::new(None::<String>));
+    let auth_required = security_mode.requires_basic();
+
     let ws_stream: WebSocketStream<Box<dyn AsyncReadWrite + Unpin + Send>> = match tls_acceptor {
         Some(acceptor) => {
             let tls = match acceptor.accept(stream).await {
@@ -144,7 +164,7 @@ async fn handle_connection(
             };
             let (r, w) = tokio::io::split(tls);
             let s: Box<dyn AsyncReadWrite + Unpin + Send> = Box::new(SplitStream(r, w));
-            match accept_async(s).await {
+            match accept_with_auth_capture(s, auth_required, captured_auth.clone()).await {
                 Ok(ws) => ws,
                 Err(e) => {
                     warn!("WebSocket 升级失败（TLS 模式）, 来自 {}: {}", peer_addr, e);
@@ -154,7 +174,7 @@ async fn handle_connection(
         }
         None => {
             let s: Box<dyn AsyncReadWrite + Unpin + Send> = Box::new(stream);
-            match accept_async(s).await {
+            match accept_with_auth_capture(s, auth_required, captured_auth.clone()).await {
                 Ok(ws) => ws,
                 Err(e) => {
                     warn!("WebSocket 升级失败，来自 {}: {}", peer_addr, e);
@@ -164,14 +184,38 @@ async fn handle_connection(
         }
     };
 
-    // 2. Basic Auth 头校验（模式 2/4）
-    // 简化：本 PR 不做实际的密码验证（缺 DB），只记录桩的 chargePointIdentity
-    // 实际密码验证放到 cloud 端 BootNotification 阶段
+    // 2. Basic Auth 密码验证（模式 2/4）
+    // fail-closed：cloud 不可达或密码错 → 关闭连接。
     if security_mode.requires_basic() {
-        info!(
-            "模式 {:?} 启用 Basic Auth；密码验证由 cloud 端 BootNotification 处理",
-            security_mode
-        );
+        let auth_header = captured_auth.lock().unwrap().clone();
+        let Some((identity, password)) = auth_header
+            .as_deref()
+            .and_then(crate::security::auth::parse_basic_auth)
+        else {
+            warn!(
+                "模式 {:?} 要求 Basic Auth 但 Authorization 头缺失或格式错，来自 {}",
+                security_mode, peer_addr
+            );
+            return;
+        };
+
+        match verify_via_cloud(&cloud, &http_client, &identity, &password).await {
+            Ok(true) => info!("桩 {} Basic Auth 通过（来自 {}）", identity, peer_addr),
+            Ok(false) => {
+                warn!(
+                    "桩 {} Basic Auth 失败（密码错或不存在），来自 {}",
+                    identity, peer_addr
+                );
+                return;
+            }
+            Err(e) => {
+                warn!(
+                    "桩 {} Basic Auth 验证失败（fail-closed）: {}",
+                    identity, e
+                );
+                return;
+            }
+        }
     }
 
     let (ws_write, ws_read) = ws_stream.split();
@@ -285,4 +329,33 @@ where
     ) -> std::task::Poll<std::io::Result<()>> {
         Pin::new(&mut self.1).poll_shutdown(cx)
     }
+}
+
+/// WS 升级：拦截 Authorization 头并捕获（Basic Auth 模式）
+async fn accept_with_auth_capture<S>(
+    stream: S,
+    auth_required: bool,
+    captured: Arc<std::sync::Mutex<Option<String>>>,
+) -> std::result::Result<WebSocketStream<S>, GatewayError>
+where
+    S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin + Send + 'static,
+{
+    use tokio_tungstenite::tungstenite::handshake::server::{ErrorResponse, Request, Response};
+
+    let ws = accept_hdr_async(stream, move |req: &Request, response: Response| {
+        if auth_required {
+            if let Some(auth) = req
+                .headers()
+                .get("authorization")
+                .and_then(|v| v.to_str().ok())
+            {
+                *captured.lock().unwrap() = Some(auth.to_string());
+            }
+        }
+        Ok::<_, ErrorResponse>(response)
+    })
+    .await
+    .map_err(|e| GatewayError::WebSocket(format!("WS 升级失败: {e}")))?;
+
+    Ok(ws)
 }

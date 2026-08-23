@@ -83,9 +83,23 @@ async fn main() -> anyhow::Result<()> {
 
 fn build_router(state: AppState) -> Router {
     let state = Arc::new(state);
+    // /internal 路由：内网 API，受 internal::middleware::require_internal_token 保护
+    // 注意：api_key 通过闭包捕获传入（见 middleware.rs 设计）
+    let api_key = state
+        .config
+        .as_ref()
+        .map(|c| c.cloud.api_key.clone())
+        .unwrap_or_default();
+    let internal_routes = charge_mgt_cloud::internal::router().layer(
+        axum::middleware::from_fn(charge_mgt_cloud::internal::middleware::require_internal_token(
+            api_key,
+        )),
+    );
+
     router::build()
         .route("/", get(root))
         .route("/health", get(health))
+        .nest("/internal", internal_routes)
         .layer(Extension(state))
 }
 

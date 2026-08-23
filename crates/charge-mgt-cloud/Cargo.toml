@@ -52,5 +52,9 @@ anyhow = "1"
 
 reqwest = { workspace = true }
 
+# 密码哈希（Basic Auth 桩身份验证）
+argon2 = "0.5"
+
 [dev-dependencies]
 tokio = { workspace = true }
+sea-orm = { workspace = true, features = ["mock"] }

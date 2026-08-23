@@ -8,7 +8,9 @@ device:
 
 cloud:
   api_url: "https://cloud.example.com"
-  api_key: "your-api-key"
+  # 内网 API 共享密钥（必须与 cloud 端 cloud.api_key 完全一致）
+  # 用于 Basic Auth 密码验证的 /internal/auth/verify 调用
+  api_key: "internal-shared-secret-CHANGEME"
 
 # 响应通道模式: "redis" (BLPOP 同步等待) 或 "kafka" (Consumer + PendingTracker)
 response_channel: "kafka"

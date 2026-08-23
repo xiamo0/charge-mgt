@@ -14,6 +14,8 @@ pub struct CloudConfig {
     pub id: String,
     pub http_listen_addr: String,
     pub http_listen_port: u16,
+    /// 内网 API 共享密钥（gateway 与 cloud 一致）。用于 /internal/* 路由的 Bearer 认证。
+    pub api_key: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]

@@ -90,6 +90,7 @@ pub async fn create(db: &DatabaseConnection, req: CreateChargePoint) -> Result<M
         status: Set(req.status),
         error_code: Set(req.error_code),
         install_date: Set(req.install_date),
+        password_hash: Set(None),
         is_deleted: Set(0),
         create_time: Set(now),
         update_time: Set(now),
@@ -179,4 +180,133 @@ pub async fn restore(db: &DatabaseConnection, id: &str) -> Result<Model, AppErro
     active.is_deleted = Set(0);
     active.update_time = Set(Local::now().naive_local());
     Ok(active.update(db).await?)
+}
+
+/// 校验桩 Basic Auth 密码（argon2id）。
+///
+/// **不区分失败原因**（不存在/已删/未设密码/密码错）一律返 `Ok(false)`，
+/// 防止 `charge_point_id` 枚举攻击。仅 DB 错误才返 `Err`。
+///
+/// **错误**：`Db`。
+pub async fn verify_password(
+    db: &DatabaseConnection,
+    charge_point_id: &str,
+    password: &str,
+) -> Result<bool, AppError> {
+    use argon2::{Argon2, PasswordHash, PasswordVerifier};
+
+    let model = match Entity::find()
+        .filter(Column::ChargePointId.eq(charge_point_id))
+        .filter(Column::IsDeleted.eq(0))
+        .one(db)
+        .await?
+    {
+        Some(m) => m,
+        None => return Ok(false), // 不存在
+    };
+
+    let hash = match model.password_hash.as_deref() {
+        Some(h) => h,
+        None => return Ok(false), // 未配置密码
+    };
+
+    let parsed = PasswordHash::new(hash)
+        .map_err(|e| AppError::Internal(format!("密码哈希格式错: {e}")))?;
+
+    Ok(Argon2::default()
+        .verify_password(password.as_bytes(), &parsed)
+        .is_ok())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use argon2::password_hash::{PasswordHasher, SaltString};
+    use argon2::Argon2;
+    use sea_orm::{DatabaseBackend, MockDatabase};
+
+    fn hash(pw: &str) -> String {
+        let salt = SaltString::from_b64("bWluY3J5dHNpbnRlcm5hbF9zYWx0").unwrap();
+        Argon2::default().hash_password(pw.as_bytes(), &salt).unwrap().to_string()
+    }
+
+    fn mock_db(records: Vec<Model>) -> DatabaseConnection {
+        MockDatabase::new(DatabaseBackend::Postgres)
+            .append_query_results([records])
+            .into_connection()
+    }
+
+    #[tokio::test]
+    async fn correct_password() {
+        let m = Model {
+            charge_point_id: "CP001".into(),
+            station_id: 1,
+            status: "Available".into(),
+            password_hash: Some(hash("test1234")),
+            is_deleted: 0,
+            create_time: Default::default(),
+            update_time: Default::default(),
+            ..Default::default()
+        };
+        let db = mock_db(vec![m]);
+        assert!(verify_password(&db, "CP001", "test1234").await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn wrong_password() {
+        let m = Model {
+            charge_point_id: "CP001".into(),
+            station_id: 1,
+            status: "Available".into(),
+            password_hash: Some(hash("test1234")),
+            is_deleted: 0,
+            create_time: Default::default(),
+            update_time: Default::default(),
+            ..Default::default()
+        };
+        let db = mock_db(vec![m]);
+        assert!(!verify_password(&db, "CP001", "wrong").await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn not_found() {
+        let db = mock_db(vec![]);
+        assert!(!verify_password(&db, "DOES_NOT_EXIST", "x").await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn no_password_configured() {
+        let m = Model {
+            charge_point_id: "CP001".into(),
+            station_id: 1,
+            status: "Available".into(),
+            password_hash: None,
+            is_deleted: 0,
+            create_time: Default::default(),
+            update_time: Default::default(),
+            ..Default::default()
+        };
+        let db = mock_db(vec![m]);
+        assert!(!verify_password(&db, "CP001", "test1234").await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn soft_deleted_rejected() {
+        let m = Model {
+            charge_point_id: "CP001".into(),
+            station_id: 1,
+            status: "Available".into(),
+            password_hash: Some(hash("test1234")),
+            is_deleted: 1, // 软删
+            create_time: Default::default(),
+            update_time: Default::default(),
+            ..Default::default()
+        };
+        // mock_db 直接返回该记录（即使 is_deleted=1，service 层 .filter(IsDeleted=0) 过滤掉）
+        // 这里用 empty 表示"过滤后没结果"
+        let db = MockDatabase::new(DatabaseBackend::Postgres)
+            .append_query_results::<Model, _, _>([vec![]])
+            .into_connection();
+        assert!(!verify_password(&db, "CP001", "test1234").await.unwrap());
+    }
 }
