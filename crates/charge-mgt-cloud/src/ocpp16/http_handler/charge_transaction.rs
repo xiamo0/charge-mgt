@@ -7,6 +7,8 @@ use std::sync::Arc;
 use axum::extract::{Extension, Json, Path, Query};
 use axum::response::IntoResponse;
 
+use crate::auth::middleware::AuthContext;
+use crate::auth::role;
 use crate::error::AppError;
 use crate::ocpp16::dto::charge_transaction::{
     SettleTransaction, TransactionListQuery, UpdateTransaction,
@@ -57,9 +59,11 @@ pub async fn get_by_transaction_id(
 /// `PATCH /api/v1/transactions/:id`
 pub async fn update(
     Extension(state): Extension<Arc<AppState>>,
+    Extension(ctx): Extension<AuthContext>,
     Path(id): Path<i64>,
     Json(req): Json<UpdateTransaction>,
 ) -> Result<impl IntoResponse, AppError> {
+    role::require_write_access(&ctx)?;
     if let Ok(db) = state.db() {
         let data = svc::update(db, id, req).await?;
         Ok(Json(ApiResponse::ok(data)))
@@ -71,9 +75,11 @@ pub async fn update(
 /// `POST /api/v1/transactions/:id/settle` — 写入结算金额。
 pub async fn settle(
     Extension(state): Extension<Arc<AppState>>,
+    Extension(ctx): Extension<AuthContext>,
     Path(id): Path<i64>,
     Json(req): Json<SettleTransaction>,
 ) -> Result<impl IntoResponse, AppError> {
+    role::require_write_access(&ctx)?;
     if let Ok(db) = state.db() {
         let data = svc::settle(db, id, req).await?;
         Ok(Json(ApiResponse::ok(data)))
@@ -85,8 +91,10 @@ pub async fn settle(
 /// `POST /api/v1/transactions/:id/refund` — 仅 `payment_status == Paid` 时允许。
 pub async fn refund(
     Extension(state): Extension<Arc<AppState>>,
+    Extension(ctx): Extension<AuthContext>,
     Path(id): Path<i64>,
 ) -> Result<impl IntoResponse, AppError> {
+    role::require_delete_access(&ctx)?;
     if let Ok(db) = state.db() {
         let data = svc::refund(db, id).await?;
         Ok(Json(ApiResponse::ok(data)))

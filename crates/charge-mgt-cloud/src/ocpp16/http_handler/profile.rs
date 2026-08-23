@@ -8,6 +8,8 @@ use std::sync::Arc;
 use axum::extract::{Extension, Json, Path, Query};
 use axum::response::IntoResponse;
 
+use crate::auth::middleware::AuthContext;
+use crate::auth::role;
 use crate::error::AppError;
 use crate::ocpp16::dto::common::ApiResponse;
 use crate::ocpp16::dto::smart_charge_profile::{CreateProfile, ProfileListQuery};
@@ -57,8 +59,10 @@ pub async fn nested_list(
 /// `POST /api/v1/charging-profiles`
 pub async fn create(
     Extension(state): Extension<Arc<AppState>>,
+    Extension(ctx): Extension<AuthContext>,
     Json(req): Json<CreateProfile>,
 ) -> Result<impl IntoResponse, AppError> {
+    role::require_write_access(&ctx)?;
     if let Ok(db) = state.db() {
         let data = svc::create(db, req).await?;
         Ok(Json(ApiResponse::ok(data)))
@@ -70,8 +74,10 @@ pub async fn create(
 /// `DELETE /api/v1/charging-profiles/:id` — 物理删除。
 pub async fn delete(
     Extension(state): Extension<Arc<AppState>>,
+    Extension(ctx): Extension<AuthContext>,
     Path(id): Path<i64>,
 ) -> Result<impl IntoResponse, AppError> {
+    role::require_delete_access(&ctx)?;
     if let Ok(db) = state.db() {
         svc::delete(db, id).await?;
         Ok(Json(ApiResponse::ok("deleted".to_owned())))

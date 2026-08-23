@@ -9,6 +9,8 @@ use std::sync::Arc;
 use axum::extract::{Extension, Json, Path, Query};
 use axum::response::IntoResponse;
 
+use crate::auth::middleware::AuthContext;
+use crate::auth::role;
 use crate::error::AppError;
 use crate::ocpp16::dto::common::ApiResponse;
 use crate::ocpp16::dto::identity_info::{CreateIdentity, IdentityListQuery, UpdateIdentity};
@@ -57,8 +59,10 @@ pub async fn get_by_tag(
 /// `POST /api/v1/identities`
 pub async fn create(
     Extension(state): Extension<Arc<AppState>>,
+    Extension(ctx): Extension<AuthContext>,
     Json(req): Json<CreateIdentity>,
 ) -> Result<impl IntoResponse, AppError> {
+    role::require_write_access(&ctx)?;
     if let Ok(db) = state.db() {
         let data = svc::create(db, req).await?;
         Ok(Json(ApiResponse::ok(data)))
@@ -70,9 +74,11 @@ pub async fn create(
 /// `PATCH /api/v1/identities/:id`
 pub async fn update(
     Extension(state): Extension<Arc<AppState>>,
+    Extension(ctx): Extension<AuthContext>,
     Path(id): Path<i64>,
     Json(req): Json<UpdateIdentity>,
 ) -> Result<impl IntoResponse, AppError> {
+    role::require_write_access(&ctx)?;
     if let Ok(db) = state.db() {
         let data = svc::update(db, id, req).await?;
         Ok(Json(ApiResponse::ok(data)))
@@ -86,8 +92,10 @@ pub async fn update(
 /// **不**物理删除；仅置 `status = Blocked`。
 pub async fn delete(
     Extension(state): Extension<Arc<AppState>>,
+    Extension(ctx): Extension<AuthContext>,
     Path(id): Path<i64>,
 ) -> Result<impl IntoResponse, AppError> {
+    role::require_delete_access(&ctx)?;
     if let Ok(db) = state.db() {
         svc::to_blocked_status(db, id).await?;
         Ok(Json(ApiResponse::ok("blocked".to_owned())))
@@ -101,8 +109,10 @@ pub async fn delete(
 /// **前置**：`Expired` 标签不能直接 activate（必须先续期）。
 pub async fn activate(
     Extension(state): Extension<Arc<AppState>>,
+    Extension(ctx): Extension<AuthContext>,
     Path(id): Path<i64>,
 ) -> Result<impl IntoResponse, AppError> {
+    role::require_write_access(&ctx)?;
     if let Ok(db) = state.db() {
         let data = svc::activate(db, id).await?;
         Ok(Json(ApiResponse::ok(data)))
@@ -114,8 +124,10 @@ pub async fn activate(
 /// `POST /api/v1/identities/:id/block` — 显式挂失（与 DELETE 等价）。
 pub async fn block(
     Extension(state): Extension<Arc<AppState>>,
+    Extension(ctx): Extension<AuthContext>,
     Path(id): Path<i64>,
 ) -> Result<impl IntoResponse, AppError> {
+    role::require_write_access(&ctx)?;
     if let Ok(db) = state.db() {
         svc::to_blocked_status(db, id).await?;
         Ok(Json(ApiResponse::ok("blocked".to_owned())))

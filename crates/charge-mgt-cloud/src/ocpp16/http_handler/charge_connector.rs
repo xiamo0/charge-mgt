@@ -5,6 +5,8 @@ use std::sync::Arc;
 use axum::extract::{Extension, Json, Path, Query};
 use axum::response::IntoResponse;
 
+use crate::auth::middleware::AuthContext;
+use crate::auth::role;
 use crate::error::AppError;
 use crate::ocpp16::dto::charge_connector::{ChargeConnectorListQuery, UpdateChargeConnector};
 use crate::ocpp16::dto::common::ApiResponse;
@@ -58,9 +60,11 @@ pub async fn get(
 /// `PATCH /api/v1/charge-points/:charge_point_id/connectors/:connector_id`
 pub async fn update(
     Extension(state): Extension<Arc<AppState>>,
+    Extension(ctx): Extension<AuthContext>,
     Path((pid, cid)): Path<(String, String)>,
     Json(req): Json<UpdateChargeConnector>,
 ) -> Result<impl IntoResponse, AppError> {
+    role::require_write_access(&ctx)?;
     if let Ok(db) = state.db() {
         let data = svc::update(db, &pid, &cid, req).await?;
         Ok(Json(ApiResponse::ok(data)))

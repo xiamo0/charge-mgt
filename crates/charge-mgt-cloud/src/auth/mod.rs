@@ -5,11 +5,13 @@
 //! - `service`：登录逻辑
 //! - `middleware`：require_auth 请求拦截
 //! - `handler`：/auth/login、/auth/me 端点
+//! - `role`：角色权限检查（write / delete）
 
 pub mod handler;
 pub mod jwt;
 pub mod middleware;
 pub mod password;
+pub mod role;
 pub mod service;
 
 pub use middleware::AuthContext;
