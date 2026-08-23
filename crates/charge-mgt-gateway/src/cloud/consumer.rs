@@ -111,12 +111,6 @@ pub struct KafkaConsumer {
     connection_manager: Arc<ConnectionManager>,
     /// 待响应请求跟踪器（Kafka 响应通道模式）
     pending_tracker: Option<Arc<PendingRequestTracker>>,
-    /// 主题名前缀
-    topic_prefix: String,
-    /// 响应主题后缀（仅 Kafka 响应通道模式）
-    resp_topic_suffix: Option<String>,
-    /// 当前网关 ID
-    gateway_id: String,
 }
 
 impl KafkaConsumer {
@@ -147,9 +141,6 @@ impl KafkaConsumer {
             consumer,
             connection_manager,
             pending_tracker: None,
-            topic_prefix: config.topic_prefix.clone(),
-            resp_topic_suffix: None,
-            gateway_id: gateway_id.to_string(),
         })
     }
 
@@ -181,9 +172,6 @@ impl KafkaConsumer {
             consumer,
             connection_manager,
             pending_tracker: Some(pending_tracker),
-            topic_prefix: config.topic_prefix.clone(),
-            resp_topic_suffix: Some(config.resp_topic_suffix.clone()),
-            gateway_id: gateway_id.to_string(),
         })
     }
 

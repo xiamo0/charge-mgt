@@ -16,8 +16,6 @@ pub struct KafkaProducer {
     producer: FutureProducer,
     /// 主题名前缀
     topic_prefix: String,
-    /// 请求主题后缀
-    req_topic_suffix: String,
 }
 
 impl KafkaProducer {
@@ -35,7 +33,6 @@ impl KafkaProducer {
         Ok(Self {
             producer,
             topic_prefix: config.topic_prefix.clone(),
-            req_topic_suffix: config.req_topic_suffix.clone(),
         })
     }
 
@@ -69,8 +66,6 @@ impl KafkaProducer {
 pub struct MockKafkaProducer {
     /// 主题名前缀
     topic_prefix: String,
-    /// 请求主题后缀
-    req_topic_suffix: String,
 }
 
 impl MockKafkaProducer {
@@ -79,7 +74,6 @@ impl MockKafkaProducer {
         info!("模拟 Kafka 生产者已创建，前缀: {}", config.topic_prefix);
         Self {
             topic_prefix: config.topic_prefix.clone(),
-            req_topic_suffix: config.req_topic_suffix.clone(),
         }
     }
 

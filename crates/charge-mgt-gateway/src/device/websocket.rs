@@ -12,13 +12,12 @@ use futures_util::{SinkExt, StreamExt};
 use std::net::SocketAddr;
 use std::pin::Pin;
 use std::sync::Arc;
-use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, ReadHalf, WriteHalf};
+use tokio::io::{AsyncRead, AsyncWrite, ReadHalf, WriteHalf};
 use tokio::net::TcpListener;
 use tokio::sync::mpsc;
-use tokio_rustls::server::TlsStream;
 use tokio_rustls::TlsAcceptor;
 use tokio_tungstenite::WebSocketStream;
-use tokio_tungstenite::{accept_async, accept_hdr_async};
+use tokio_tungstenite::accept_hdr_async;
 use tracing::{error, info, warn};
 
 use crate::cloud::{ConnectionManager, KafkaProducer};
