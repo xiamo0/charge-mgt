@@ -32,15 +32,21 @@ kafka:
   # 响应超时秒数, 仅 kafka 模式使用
   response_timeout_secs: 30
 
-# OCPP 1.6 链路安全配置（模式 1-4，mTLS 模式 5/6 留 P2）
-# 4 种组合：
-#   auth_mode: none + tls.enabled: false  → 模式 1：明文 ws://，无认证
-#   auth_mode: none + tls.enabled: true   → 模式 3：wss://，无认证
-#   auth_mode: basic + tls.enabled: false → 模式 2：明文 Basic（仅过渡）
-#   auth_mode: basic + tls.enabled: true  → 模式 4：wss:// + Basic（OCPP 1.6 主流）
+# OCPP 1.6 链路安全配置（6 种模式）
+# 模式映射（auth_mode × tls.enabled × tls.mtls）：
+#   none              + tls:off                 → 模式 1：明文无认证（内部/调试）
+#   none              + tls:on                  → 模式 3：TLS 无认证
+#   basic             + tls:off                 → 模式 2：明文 Basic（仅过渡）
+#   basic             + tls:on + mtls:off       → 模式 4：TLS + Basic（主流生产）
+#   mtls              + tls:on + mtls:on        → 模式 5：TLS + mTLS（高安全）
+#   mtls-with-basic  + tls:on + mtls:on        → 模式 6：TLS + mTLS + Basic（最高安全）
 ocpp_security:
-  auth_mode: "none"      # 开发用 none；生产推荐 "basic"
+  auth_mode: "none"      # none / basic / mtls / mtls-with-basic
   tls:
-    enabled: false         # 开发用 false；生产部署用 true
+    enabled: false         # false = 明文 ws://；true = 加密 wss://
     cert_path: "crates/charge-mgt-gateway/certs/server-cert.pem"
     key_path: "crates/charge-mgt-gateway/certs/server-key.pem"
+    # mTLS（仅模式 5/6 必填；CA 证书用于验证桩客户端证书）
+    mtls:
+      ca_cert_path: "crates/charge-mgt-gateway/certs/ca-cert.pem"
+      client_auth: "required"   # required / optional

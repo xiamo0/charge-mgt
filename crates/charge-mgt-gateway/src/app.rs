@@ -8,7 +8,7 @@ use crate::response_channel::{
     KafkaResponseChannel, PendingRequestTracker, RedisResponseChannel, ResponseChannel,
 };
 use crate::security::policy::SecurityMode;
-use crate::security::tls::load_server_config;
+use crate::security::tls::{load_mtls_server_config, load_server_config};
 use std::sync::Arc;
 use tokio_rustls::TlsAcceptor;
 use tracing::info;
@@ -73,7 +73,7 @@ impl Application {
         let security_mode = SecurityMode::from_config(&self.config.ocpp_security)?;
         info!("OCPP 1.6 链路安全模式: {:?}", security_mode);
 
-        // 模式 3/4：加载 TLS 证书并构造 TlsAcceptor
+        // 模式 3/4：单向 TLS。模式 5/6：mTLS（CA 验证客户端证书）。
         let tls_acceptor = if security_mode.is_tls() {
             let cert_path = self
                 .config
@@ -89,7 +89,17 @@ impl Application {
                 .key_path
                 .as_ref()
                 .ok_or_else(|| crate::error::GatewayError::Config("key_path 缺失".into()))?;
-            let server_config = load_server_config(cert_path, key_path)?;
+
+            let server_config = if security_mode.requires_mtls() {
+                let mtls = self.config.ocpp_security.tls.mtls.as_ref().ok_or_else(|| {
+                    crate::error::GatewayError::Config(
+                        "mTLS 模式需要配置 tls.mtls.ca_cert_path".into(),
+                    )
+                })?;
+                load_mtls_server_config(cert_path, key_path, mtls)?
+            } else {
+                load_server_config(cert_path, key_path)?
+            };
             Some(TlsAcceptor::from(server_config))
         } else {
             None

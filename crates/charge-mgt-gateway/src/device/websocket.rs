@@ -6,7 +6,8 @@
 //! 安全（OCPP 1.6）：
 //! - 模式 1/2：明文 ws://
 //! - 模式 3/4：wss://（rustls TLS）
-//! - 模式 2/4：WS 升级时调 cloud /internal/auth/verify 验证密码（fail-closed）
+//! - 模式 5/6：wss:// + mTLS（CA 校验客户端证书，启用自动由 app.rs 注入）
+//! - 模式 2/4/6：WS 升级时调 cloud /internal/auth/verify 验证密码（fail-closed）
 
 use futures_util::{SinkExt, StreamExt};
 use std::net::SocketAddr;
