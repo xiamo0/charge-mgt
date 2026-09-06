@@ -15,7 +15,7 @@ use rustls::pki_types::{PrivateKeyDer, PrivatePkcs8KeyDer};
 use rustls::server::WebPkiClientVerifier;
 use rustls_pemfile::{certs, pkcs8_private_keys};
 
-use crate::config::MtlsConfig;
+use crate::config::{ClientAuthMode, MtlsConfig};
 use crate::error::GatewayError;
 
 /// 从 PEM 文件加载服务端 TLS 配置
@@ -38,6 +38,7 @@ pub fn load_server_config(cert_path: &Path, key_path: &Path) -> Result<Arc<Serve
 ///
 /// - `cert_path` / `key_path`：服务端自己的证书 + 私钥
 /// - `mtls.ca_cert_path`：信任的 CA 证书池（桩客户端证书必须由其中之一签发）
+/// - `mtls.client_auth`：`Required` 拒绝无证书连接；`Optional` 允许匿名 TLS 连接（有证书时仍验证）
 pub fn load_mtls_server_config(
     cert_path: &Path,
     key_path: &Path,
@@ -61,8 +62,12 @@ pub fn load_mtls_server_config(
         root_store.add(ca).map_err(|e| GatewayError::Tls(e.to_string()))?;
     }
 
-    // 构造 client cert verifier
-    let verifier = WebPkiClientVerifier::builder(root_store.into())
+    // 构造 client cert verifier（Optional 模式允许无证书的匿名连接）
+    let mut builder = WebPkiClientVerifier::builder(root_store.into());
+    if mtls.client_auth == ClientAuthMode::Optional {
+        builder = builder.allow_unauthenticated();
+    }
+    let verifier = builder
         .build()
         .map_err(|e| GatewayError::Tls(format!("构建 ClientCertVerifier 失败: {e}")))?;
 
@@ -105,6 +110,23 @@ mod tests {
         };
         let cfg = load_server_config(&cert, &key);
         assert!(cfg.is_ok(), "{:?}", cfg.err());
+    }
+
+    /// mTLS 配置加载：Required / Optional 两种 client_auth 均应成功
+    #[test]
+    fn loads_mtls_config_both_client_auth_modes() {
+        let Some((cert, key)) = generate_test_certs() else {
+            eprintln!("skip: openssl not available");
+            return;
+        };
+        for mode in [ClientAuthMode::Required, ClientAuthMode::Optional] {
+            let mtls = MtlsConfig {
+                ca_cert_path: cert.clone(), // 自签证书充当 CA（仅验证构造链路）
+                client_auth: mode,
+            };
+            let cfg = load_mtls_server_config(&cert, &key, &mtls);
+            assert!(cfg.is_ok(), "{:?}: {:?}", mode, cfg.err());
+        }
     }
 
     fn generate_test_certs() -> Option<(std::path::PathBuf, std::path::PathBuf)> {
