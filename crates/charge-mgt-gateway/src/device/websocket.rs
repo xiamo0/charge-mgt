@@ -153,7 +153,7 @@ async fn handle_connection(
     let captured_auth = Arc::new(std::sync::Mutex::new(None::<String>));
     let auth_required = security_mode.requires_basic();
 
-    let ws_stream: WebSocketStream<Box<dyn AsyncReadWrite + Unpin + Send>> = match tls_acceptor {
+    let (client_cert_cn, ws_stream): (Option<String>, WebSocketStream<Box<dyn AsyncReadWrite + Unpin + Send>>) = match tls_acceptor {
         Some(acceptor) => {
             let tls = match acceptor.accept(stream).await {
                 Ok(t) => t,
@@ -162,10 +162,33 @@ async fn handle_connection(
                     return;
                 }
             };
+            // mTLS 模式下从握手结果提取客户端证书 CN（CN = chargePointIdentity 强校验）
+            let cn = tls
+                .get_ref()
+                .1
+                .peer_certificates()
+                .and_then(|certs| certs.first().cloned())
+                .and_then(|cert| {
+                    use x509_parser::prelude::FromDer;
+                    use x509_parser::certificate::X509Certificate;
+                    X509Certificate::from_der(&cert).ok().and_then(|(_, x509)| {
+                        x509.subject().to_string().split(',').find_map(|s| {
+                            if s.trim().starts_with("CN=") {
+                                Some(s.trim().trim_start_matches("CN=").to_string())
+                            } else {
+                                None
+                            }
+                        })
+                    })
+                });
+            if let Some(ref cn) = cn {
+                info!("mTLS 客户端证书 CN: {}", cn);
+            }
+
             let (r, w) = tokio::io::split(tls);
             let s: Box<dyn AsyncReadWrite + Unpin + Send> = Box::new(SplitStream(r, w));
             match accept_with_auth_capture(s, auth_required, captured_auth.clone()).await {
-                Ok(ws) => ws,
+                Ok(ws) => (cn, ws),
                 Err(e) => {
                     warn!("WebSocket 升级失败（TLS 模式）, 来自 {}: {}", peer_addr, e);
                     return;
@@ -175,7 +198,7 @@ async fn handle_connection(
         None => {
             let s: Box<dyn AsyncReadWrite + Unpin + Send> = Box::new(stream);
             match accept_with_auth_capture(s, auth_required, captured_auth.clone()).await {
-                Ok(ws) => ws,
+                Ok(ws) => (None, ws),
                 Err(e) => {
                     warn!("WebSocket 升级失败，来自 {}: {}", peer_addr, e);
                     return;
@@ -230,6 +253,7 @@ async fn handle_connection(
         gateway_id,
         gateway_host,
         response_tx.clone(),
+        client_cert_cn,
     );
 
     let mut ws_read = ws_read;

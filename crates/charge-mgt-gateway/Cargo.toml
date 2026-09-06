@@ -26,6 +26,8 @@ config = "0.14"
 rustls = { version = "0.23", default-features = false, features = ["std", "logging"] }
 rustls-pemfile = "2.2"
 tokio-rustls = "0.26"
+# X.509 证书解析（mTLS 提取客户端证书 CN 用）
+x509-parser = "0.16"
 
 # Basic Auth：密码哈希（OWASP 推荐 argon2id）+ base64 解码
 argon2 = "0.5"

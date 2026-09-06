@@ -39,6 +39,8 @@ pub struct Connection {
     charge_point_model: Option<String>,
     /// 充电桩序列号/ID（BootNotification 后填充）
     charge_point_id: Option<String>,
+    /// 客户端证书的 CN（mTLS 模式下从握手提取；其他模式为 None）
+    client_cert_cn: Option<String>,
     /// 全局连接管理器
     connection_manager: Arc<ConnectionManager>,
     /// Kafka 生产者，用于上行消息发布
@@ -63,6 +65,7 @@ impl Connection {
         gateway_id: String,
         gateway_host: String,
         response_tx: mpsc::UnboundedSender<String>,
+        client_cert_cn: Option<String>,
     ) -> Self {
         Self {
             id: uuid::Uuid::new_v4().to_string(),
@@ -70,6 +73,7 @@ impl Connection {
             charge_point_vendor: None,
             charge_point_model: None,
             charge_point_id: None,
+            client_cert_cn,
             connection_manager,
             kafka_producer,
             response_channel,
@@ -77,6 +81,11 @@ impl Connection {
             gateway_host,
             response_tx,
         }
+    }
+
+    /// 获取 mTLS 客户端证书的 CN（无 mTLS 时为 None）
+    pub fn client_cert_cn(&self) -> Option<&str> {
+        self.client_cert_cn.as_deref()
     }
 
     fn current_charge_point_id(&self) -> String {
